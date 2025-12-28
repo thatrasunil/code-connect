@@ -44,7 +44,6 @@ codeconnect/
 │   └── package.json
 │
 └── README.md
-```
 
 ## 🚀 Quick Start
 
