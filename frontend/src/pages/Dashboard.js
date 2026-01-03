@@ -8,6 +8,7 @@ const Dashboard = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [history, setHistory] = useState([]);
+    const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
     /* Admin State */
     const [adminStats, setAdminStats] = useState(null);
@@ -32,11 +33,11 @@ const Dashboard = () => {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token}` };
 
-            const statsRes = await fetch('http://localhost:3001/api/admin/stats', { headers });
+            const statsRes = await fetch(`${BACKEND_URL}/api/admin/stats`, { headers });
             const statsData = await statsRes.json();
             setAdminStats(statsData);
 
-            const usersRes = await fetch('http://localhost:3001/api/admin/users', { headers });
+            const usersRes = await fetch(`${BACKEND_URL}/api/admin/users`, { headers });
             const usersData = await usersRes.json();
             setUsersList(usersData);
         } catch (err) {
@@ -49,7 +50,7 @@ const Dashboard = () => {
         if (!window.confirm("Are you sure you want to delete this user?")) return;
         try {
             const token = localStorage.getItem('token');
-            await fetch(`http://localhost:3001/api/admin/user/${userId}`, {
+            await fetch(`${BACKEND_URL}/api/admin/user/${userId}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });

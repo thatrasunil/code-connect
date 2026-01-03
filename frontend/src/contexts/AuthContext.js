@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     // Backend URL (dynamic based on env or default)
-    const BACKEND_URL = 'http://localhost:3001';
+    const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
     useEffect(() => {
         // Check for token in localStorage on mount

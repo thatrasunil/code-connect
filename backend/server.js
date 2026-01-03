@@ -15,6 +15,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3007",
+  process.env.FRONTEND_URL || "https://codeconnect.vercel.app",
   "https://codeconnect-zeta-pied.vercel.app",
   "https://codeconnect-frontend.vercel.app",
   "https://codeshare-production-b2f2.up.railway.app"
@@ -42,6 +43,11 @@ app.use(express.json());
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
+});
+
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: 'CodeConnect Backend API is running' });
 });
 
 const PORT = process.env.PORT || 3001;
@@ -271,6 +277,10 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
