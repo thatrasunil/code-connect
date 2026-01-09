@@ -200,23 +200,6 @@ const config = {
 3. Use the built-in timer to track progress
 4. Post questions directly to the editor
 
-## 🌐 Deployment
-
-### Frontend (Vercel/Netlify)
-```bash
-cd frontend
-npm run build
-# Deploy the build/ folder to your hosting service
-```
-
-### Backend (Railway/Heroku/PythonAnywhere)
-```bash
-cd backend_django
-# Set environment variables on your hosting platform
-# Configure ALLOWED_HOSTS in settings.py
-# Run: python manage.py collectstatic
-```
-
 ## 🆕 Recent Updates (v2.0.0)
 
 ### Phase 1.1: Critical Fixes ✅
