@@ -5,16 +5,25 @@ import { FaPaperPlane, FaMicrophone, FaPaperclip, FaStop, FaReply, FaTimes, FaCo
 import { motion, AnimatePresence } from 'framer-motion';
 import config from '../config';
 
-const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen, currentTypingUsers, onTyping }) => {
+const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen, currentTypingUsers, onTyping, aiMode, setAiMode }) => {
     const { user } = useAuth();
     const { toast } = useToast();
     const [messageText, setMessageText] = useState('');
     const [isRecording, setIsRecording] = useState(false);
     const [mediaRecorder, setMediaRecorder] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [replyingTo, setReplyingTo] = useState(null); // Message object being replied to
+    const [replyingTo, setReplyingTo] = useState(null);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
+
+    // Sync local tab state with aiMode prop if available, otherwise default to team
+    const activeTab = aiMode ? 'ai' : 'team';
+
+    const handleTabChange = (tab) => {
+        if (setAiMode) {
+            setAiMode(tab === 'ai');
+        }
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -22,15 +31,17 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
 
     React.useEffect(() => {
         scrollToBottom();
-    }, [messages]);
+    }, [messages, activeTab]);
 
     const handleSendMessage = () => {
         if (!messageText.trim()) return;
         const parentId = replyingTo ? replyingTo.id : null;
-        onSendMessage(messageText, 'TEXT', null, parentId);
+        onSendMessage(messageText, 'TEXT', null, parentId); // Logic in Editor.js handles AI routing based on aiMode
         setMessageText('');
         setReplyingTo(null);
     };
+
+    // ... (keep existing handlers: handleFileUpload, startRecording, etc.)
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
@@ -52,15 +63,16 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData
             });
-            const data = await res.json();
 
             if (res.ok) {
+                const data = await res.json();
                 const type = file.type.startsWith('image/') ? 'IMAGE' : 'FILE';
                 const parentId = replyingTo ? replyingTo.id : null;
                 onSendMessage(data.filename, type, data.url, parentId);
                 setReplyingTo(null);
             } else {
-                toast.error("Upload failed: " + data.error);
+                const data = await res.json().catch(() => ({ error: 'Upload failed' }));
+                toast.error("Upload failed: " + (data.error || 'Unknown error'));
             }
         } catch (err) {
             console.error("Upload error", err);
@@ -116,8 +128,8 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData
             });
-            const data = await res.json();
             if (res.ok) {
+                const data = await res.json().catch(() => ({}));
                 const parentId = replyingTo ? replyingTo.id : null;
                 onSendMessage("Voice Message", 'AUDIO', data.url, parentId);
                 setReplyingTo(null);
@@ -142,23 +154,47 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
             content = <img src={url} alt="Shared" style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '5px' }} />;
         } else if (msg.type === 'FILE') {
             const url = msg.attachmentUrl || msg.fileUrl;
+            let fileContentDisplay = 'File';
+            try {
+                if (typeof msg.content === 'object') {
+                    fileContentDisplay = JSON.stringify(msg.content);
+                } else {
+                    fileContentDisplay = String(msg.content || 'File');
+                }
+            } catch (e) { fileContentDisplay = 'File'; }
+
             content = (
                 <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--accent-primary)', marginTop: '5px' }}>
-                    <FaPaperclip /> {typeof msg.content === 'object' ? JSON.stringify(msg.content) : String(msg.content || 'File')}
+                    <FaPaperclip /> {fileContentDisplay}
                 </a>
             );
         } else {
-            const textContent = typeof msg.content === 'object' ? JSON.stringify(msg.content) : String(msg.content || '');
+            let textContent = '';
+            try {
+                if (typeof msg.content === 'object') {
+                    textContent = JSON.stringify(msg.content);
+                } else {
+                    textContent = String(msg.content || '');
+                }
+            } catch (e) { textContent = '[Invalid Content]'; }
+
             content = <div className="message-text">{textContent}</div>;
         }
 
         // Parent Message Display
         let parentDisplay = null;
         if (msg.parentId) {
-            // Find parent message content directly from messages prop
-            // Note: This logic depends on 'messages' containing the parent. If pagination exists, it might be missing.
             const parent = messages.find(m => m.id === msg.parentId || m.id === parseInt(msg.parentId));
             if (parent) {
+                let parentContent = '';
+                try {
+                    if (typeof parent.content === 'object') {
+                        parentContent = JSON.stringify(parent.content).substring(0, 30) + '...';
+                    } else {
+                        parentContent = String(parent.content || '').substring(0, 30) + '...';
+                    }
+                } catch (e) { parentContent = '...'; }
+
                 parentDisplay = (
                     <div style={{
                         borderLeft: '2px solid var(--accent-secondary)',
@@ -170,7 +206,7 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
                         padding: '4px',
                         borderRadius: '0 4px 4px 0'
                     }}>
-                        <strong>{String(parent.userId || 'User').substring(0, 10)}:</strong> {typeof parent.content === 'object' ? JSON.stringify(parent.content).substring(0, 30) : String(parent.content || '').substring(0, 30)}...
+                        <strong>{String(parent.userId || 'User').substring(0, 10)}:</strong> {parentContent}
                     </div>
                 );
             }
@@ -185,7 +221,9 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
             >
                 {parentDisplay}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: 'bold', color: '#f8fafc' }}>{String(msg.userId || 'User').substring(0, 10)}</span>
+                    <span style={{ fontWeight: 'bold', color: msg.userId === 'Gemini AI' ? '#ec4899' : '#f8fafc' }}>
+                        {msg.userId === 'Gemini AI' ? '✨ Gemini AI' : String(msg.userId || 'User').substring(0, 10)}
+                    </span>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <span>{time}</span>
                         {/* Reply Button */}
@@ -210,10 +248,45 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
 
     if (!isOpen) return null;
 
+    // Filter messages based on active Tab
+    const filteredMessages = messages.filter(msg => {
+        if (activeTab === 'team') {
+            return msg.userId !== 'Gemini AI' && msg.type !== 'AI_PENDING';
+        }
+        return true; // Show all in AI tab (context)
+    });
+
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)' }}>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #334155', background: 'rgba(0,0,0,0.2)' }}>
+                <button
+                    onClick={() => handleTabChange('team')}
+                    style={{
+                        flex: 1, padding: '10px', background: activeTab === 'team' ? 'var(--bg-secondary)' : 'transparent',
+                        color: activeTab === 'team' ? 'white' : '#94a3b8', border: 'none', cursor: 'pointer',
+                        borderBottom: activeTab === 'team' ? '2px solid #3b82f6' : 'none', fontWeight: '600'
+                    }}
+                >
+                    Team Chat
+                </button>
+                <button
+                    onClick={() => handleTabChange('ai')}
+                    style={{
+                        flex: 1, padding: '10px', background: activeTab === 'ai' ? 'var(--bg-secondary)' : 'transparent',
+                        color: activeTab === 'ai' ? '#ec4899' : '#94a3b8', border: 'none', cursor: 'pointer',
+                        borderBottom: activeTab === 'ai' ? '2px solid #ec4899' : 'none', fontWeight: '600',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px'
+                    }}
+                >
+                    AI Assistant ✨
+                </button>
+            </div>
+
             <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
-                {Array.isArray(messages) ? messages.map(formatMessage) : <div style={{ color: 'red' }}>Error: Invalid messages data</div>}
+                {Array.isArray(filteredMessages) ? filteredMessages.map(formatMessage) : <div style={{ color: 'red' }}>Error: Invalid messages data</div>}
+
 
                 {/* Typing Indicator */}
                 <AnimatePresence>
@@ -266,7 +339,7 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
                         color: '#94a3b8',
                         fontSize: '0.85rem'
                     }}>
-                        <span>Replying to <strong>{replyingTo.userId.substring(0, 10)}</strong>: {replyingTo.content.substring(0, 30)}...</span>
+                        <span>Replying to <strong>{String(replyingTo.userId || 'User').substring(0, 10)}</strong>: {String(replyingTo.content || '').substring(0, 30)}...</span>
                         <button onClick={() => setReplyingTo(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
                             <FaTimes />
                         </button>

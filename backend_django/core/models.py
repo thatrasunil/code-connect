@@ -18,6 +18,7 @@ class Room(models.Model):
     language = models.CharField(max_length=50, default="javascript")
     owner = models.ForeignKey(User, related_name='rooms', on_delete=models.SET_NULL, null=True, blank=True)
     is_public = models.BooleanField(default=True)
+    password = models.CharField(max_length=100, blank=True, null=True) # For private rooms
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -124,3 +125,36 @@ class RoomParticipant(models.Model):
     class Meta:
         db_table = 'room_participants'
         unique_together = ['room', 'user']
+
+class Quiz(models.Model):
+    id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    category = models.CharField(max_length=100) # e.g., "Python", "React", "Algorithms"
+    image_url = models.CharField(max_length=500, blank=True, null=True) # Cover image
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'quizzes'
+
+class QuizQuestion(models.Model):
+    id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
+    text = models.TextField()
+    options = models.JSONField() # List of strings: ["Option A", "Option B", ...]
+    correct_answer = models.IntegerField() # Index of the correct option (0-3)
+    explanation = models.TextField(blank=True)
+
+    class Meta:
+        db_table = 'quiz_questions'
+
+class QuizResult(models.Model):
+    id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    user = models.ForeignKey(User, related_name='quiz_results', on_delete=models.CASCADE)
+    quiz = models.ForeignKey(Quiz, related_name='results', on_delete=models.CASCADE)
+    score = models.IntegerField() # Number of correct answers
+    total_questions = models.IntegerField()
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'quiz_results'

@@ -4,11 +4,19 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
-from .models import Room, Message, RoomHistory, User
-from .serializers import UserSerializer, SignUpSerializer, RoomSerializer, MessageSerializer, RoomHistorySerializer
+from .models import User, Room, Message, RoomHistory, Question, TestCase, Submission, Quiz, QuizQuestion, QuizResult
+from .serializers import (
+    UserSerializer, SignUpSerializer, RoomSerializer, MessageSerializer, 
+    RoomHistorySerializer, QuestionSerializer, SubmissionSerializer,
+    QuizSerializer, QuizDetailSerializer, QuizResultSerializer
+)
 from .ai_service import GeminiService
+from .utils.firebase_client import get_firestore_client
 import random
 import string
+import time
+import datetime
+from firebase_admin import firestore
 
 class SignupView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -21,6 +29,14 @@ class UserProfileView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+    def patch(self, request):
+        user = request.user
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class DashboardStatsView(APIView):
     permission_classes = [IsAuthenticated]
@@ -56,11 +72,48 @@ class CreateRoomView(APIView):
     def post(self, request):
         room_id = str(random.randint(10000000, 99999999))
         
-        owner = None
+        is_public = request.data.get('isPublic', True)
+        password = request.data.get('password', '')
+        
+        owner_username = None
         if request.user.is_authenticated:
-            owner = request.user
+            owner_username = request.user.username
             
-        room = Room.objects.create(room_id=room_id, owner=owner)
+        # Create in Firestore (Preferred) or Django ORM (Fallback)
+        db = get_firestore_client()
+        created_in_firestore = False
+        
+        if db:
+            try:
+                room_data = {
+                    'roomId': room_id,
+                    'code': '',
+                    'language': 'javascript',
+                    'messages': [],
+                    'users': [],
+                    'owner': owner_username,
+                    'createdAt': datetime.datetime.now().isoformat(),
+                    'isPublic': is_public,
+                    'password': password
+                }
+                db.collection('rooms').document(room_id).set(room_data)
+                created_in_firestore = True
+            except Exception as e:
+                print(f"Firestore Create Warning: {e}")
+        
+        # Always create/sync to SQLite if possible
+        try:
+             Room.objects.create(
+                room_id=room_id, 
+                owner=request.user if request.user.is_authenticated else None,
+                is_public=is_public,
+                password=password
+            )
+        except Exception as e:
+            print(f"Django Create Error: {e}")
+            if not created_in_firestore:
+                 return Response({'error': 'Failed to create room'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         return Response({'roomId': room_id}, status=status.HTTP_201_CREATED)
 
 # --- Lean Fixes for Synchronization & Persistence ---
@@ -72,98 +125,152 @@ class RoomMetadataView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, room_id):
-        # Allow finding by internal ID or room_id string
-        room = get_object_or_404(Room, room_id=room_id)
-        # In a real app check permissions (owner or participant)
+        db = get_firestore_client()
+        if not db: return Response({})
         
-        return Response({
-            'room_id': room.room_id,
-            'language': room.language,
-            'language_display': room.language, # Simplified for now
-            'created_at': room.created_at.isoformat(),
-            'updated_at': room.updated_at.isoformat(),
-        })
+        try:
+            doc = db.collection('rooms').document(room_id).get()
+            if not doc.exists:
+                return Response({'error': 'Room not found'}, status=404)
+            
+            room_data = doc.to_dict()
+            return Response({
+                'room_id': room_data.get('roomId'),
+                'language': room_data.get('language', 'javascript'),
+                'language_display': room_data.get('language', 'javascript'),
+                'created_at': room_data.get('createdAt'),
+                'updated_at': datetime.datetime.now().isoformat(), # approximate
+            })
+        except Exception:
+            return Response({'error': 'Fetch error'}, status=500)
 
 class RoomLanguageView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def put(self, request, room_id):
-        room = get_object_or_404(Room, room_id=room_id)
-        
         language = request.data.get('language')
         if not language:
             return Response({'error': 'Language not provided'}, status=400)
-        
-        room.language = language
-        room.save()
-        
-        # Broadcast via Socket.IO
-        # Note: emit is async, use async_to_sync if needed, 
-        # but sio.emit returns a coroutine. 
-        # However, inside Sync view, we should use async_to_sync.
-        async_to_sync(sio.emit)('language_updated', {
-            'room_id': room.room_id,
-            'language': language,
-            'user': request.user.username if request.user.is_authenticated else "Guest"
-        }, room=room.room_id)
-        
-        return Response({
-            'success': True,
-            'language': language,
-            'message': f'Room language updated to {language}'
-        })
+            
+        db = get_firestore_client()
+        if db:
+            try:
+                db.collection('rooms').document(room_id).update({'language': language})
+                return Response({
+                    'success': True,
+                    'language': language,
+                    'message': f'Room language updated to {language}'
+                })
+            except Exception as e:
+                print(f"Language Update Error: {e}")
+                return Response({'error': 'Update failed'}, status=500)
+        return Response({'error': 'Database Error'}, status=500)
 
 class RoomCodeView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, room_id):
-        room = get_object_or_404(Room, room_id=room_id)
-        return Response({
-            'room_id': room.room_id,
-            'content': room.code
-        })
+        db = get_firestore_client()
+        found_code = None
+        
+        if db:
+            try:
+                doc = db.collection('rooms').document(room_id).get()
+                if doc.exists:
+                    found_code = doc.to_dict().get('code', '')
+            except Exception:
+                pass
+        
+        if found_code is None:
+            # Fallback to SQL
+            room = Room.objects.filter(room_id=room_id).first()
+            if room:
+                found_code = room.code
+        
+        if found_code is not None:
+            return Response({
+                'room_id': room_id,
+                'content': found_code
+            })
+            
+        return Response({'content': ''})
 
     def post(self, request, room_id):
-        # Handle both POST and PUT
         return self.put(request, room_id)
 
     def put(self, request, room_id):
-        room = get_object_or_404(Room, room_id=room_id)
         content = request.data.get('content', '')
         
-        room.code = content
-        room.save()
+        db = get_firestore_client()
+        updated_firestore = False
         
-        return Response({
-            'success': True,
-            'message': 'Code saved successfully',
-            'timestamp': room.updated_at.isoformat()
-        })
+        if db:
+            try:
+                db.collection('rooms').document(room_id).update({'code': content})
+                updated_firestore = True
+            except Exception as e:
+                print(f"Code Update Warning (Firestore): {e}")
+
+        # Always try to update local DB as fallback or primary
+        try:
+             room = Room.objects.filter(room_id=room_id).first()
+             if room:
+                 room.code = content
+                 room.save()
+                 return Response({
+                    'success': True,
+                    'message': 'Code saved successfully',
+                    'timestamp': datetime.datetime.now().isoformat()
+                 })
+        except Exception as e:
+            print(f"Code Update Error (SQL): {e}")
+
+        if updated_firestore:
+             return Response({
+                'success': True,
+                'message': 'Code saved successfully (Firestore)',
+                'timestamp': datetime.datetime.now().isoformat()
+            })
+
+        return Response({'error': 'Update failed'}, status=500)
 
 
 class RoomMessageView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, room_id):
-        room = get_object_or_404(Room, room_id=room_id)
-        # Fetch messages since a specific timestamp if provided (optimization)
-        # For now, return recent 50 messages
-        messages = room.messages.all().order_by('timestamp')
-        # Serialize manually or use serializer. doing manually to match existing structure in RoomDetail
-        message_list = [{
-            'id': m.id,
-            'userId': m.user_id,
-            'content': m.content,
-            'type': m.type,
-            'isVoice': m.is_voice,
-            'attachmentUrl': m.attachment_url if m.attachment_url else (m.attachment.url if m.attachment else None),
-            'timestamp': m.timestamp.isoformat()
-        } for m in messages]
-        return Response(message_list)
+        # Already handled in RoomDetail, but if fetched separately:
+        db = get_firestore_client()
+        messages = None
+        
+        if db:
+            try:
+                doc = db.collection('rooms').document(room_id).get()
+                if doc.exists:
+                    messages = doc.to_dict().get('messages', [])
+            except Exception:
+                pass
+
+        if messages is None:
+             # Fallback to SQL
+            room = Room.objects.filter(room_id=room_id).first()
+            if room:
+                # Retrieve from Message model
+                msgs = Message.objects.filter(room=room).order_by('timestamp')
+                messages = []
+                for m in msgs:
+                    messages.append({
+                        'id': m.id,
+                        'userId': m.user_id,
+                        'content': m.content,
+                        'type': m.type,
+                        'attachmentUrl': m.attachment_url,
+                        'timestamp': m.timestamp.isoformat()
+                    })
+
+        return Response(messages if messages is not None else [])
 
     def post(self, request, room_id):
-        room = get_object_or_404(Room, room_id=room_id)
-        
         user_id = request.data.get('userId', 'Guest')
         content = request.data.get('content', '')
         msg_type = request.data.get('type', 'TEXT')
@@ -171,24 +278,50 @@ class RoomMessageView(APIView):
         
         if not content and not file_url:
              return Response({'error': 'Content required'}, status=400)
+             
+        new_message = {
+            'id': int(time.time() * 1000),
+            'userId': user_id,
+            'content': content,
+            'type': msg_type,
+            'attachmentUrl': file_url,
+            'timestamp': datetime.datetime.now().isoformat()
+        }
 
-        message = Message.objects.create(
-            room=room,
-            user_id=user_id,
-            content=content,
-            type=msg_type,
-            attachment_url=file_url
-        )
+        db = get_firestore_client()
+        saved_firestore = False
         
-        # Serialize and return
-        return Response({
-            'id': message.id,
-            'userId': message.user_id,
-            'content': message.content,
-            'type': message.type,
-            'attachmentUrl': message.attachment_url,
-            'timestamp': message.timestamp.isoformat()
-        }, status=201)
+        if db:
+            try:
+                # Atomically add to array in Firestore
+                db.collection('rooms').document(room_id).update({
+                    'messages': firestore.ArrayUnion([new_message])
+                })
+                saved_firestore = True
+            except Exception as e:
+                print(f"Message Save Warning (Firestore): {e}")
+        
+        # Always try saving to SQL
+        try:
+            room = Room.objects.filter(room_id=room_id).first()
+            if room:
+                # Save to Message model
+                Message.objects.create(
+                    room=room,
+                    user_id=user_id,
+                    content=content,
+                    type=msg_type,
+                    attachment_url=file_url,
+                    timestamp=datetime.datetime.now()
+                )
+                return Response(new_message, status=201)
+        except Exception as e:
+             print(f"Message Save Error (SQL): {e}")
+
+        if saved_firestore:
+            return Response(new_message, status=201)
+            
+        return Response({'error': 'Failed to save message'}, status=500)
 
 
 class FileUploadView(APIView):
@@ -223,35 +356,64 @@ class RoomDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, room_id):
-        try:
-            room = Room.objects.get(room_id=room_id)
-            
-            # Privacy Check
-            if not room.is_public:
-                if not request.user.is_authenticated or room.owner != request.user:
-                    return Response({'error': 'This room is private'}, status=status.HTTP_403_FORBIDDEN)
+        db = get_firestore_client()
+        room_data = None
+        
+        # 1. Fetch Room Logic (Firestore or Django)
+        if db:
+            try:
+                doc_ref = db.collection('rooms').document(room_id)
+                doc = doc_ref.get()
+                if doc.exists:
+                    room_data = doc.to_dict()
+            except Exception as e:
+                 print(f"Firestore Fetch Error: {e}")
 
-            messages = room.messages.all().order_by('timestamp')
-            message_list = [{
-                'id': m.id,
-                'userId': m.user_id,
-                'content': m.content,
-                'type': m.type,
-                'isVoice': m.is_voice,
-                'attachmentUrl': m.attachment_url if m.attachment_url else (m.attachment.url if m.attachment else None),
-                'timestamp': m.timestamp
-            } for m in messages]
-            
-            return Response({
-                'roomId': room.room_id,
-                'code': room.code,
-                'language': room.language,
-                'messages': message_list,
-                'owner': room.owner.username if room.owner else None,
-                'isPublic': room.is_public
-            })
-        except Room.DoesNotExist:
-            return Response({'code': '', 'language': 'javascript', 'messages': []})
+        if not room_data:
+            # Fallback to Django
+            room = Room.objects.filter(room_id=room_id).first()
+            if room:
+                room_data = {
+                    'roomId': room.room_id,
+                    'code': room.code,
+                    'language': room.language,
+                    'messages': [], 
+                    'owner': room.owner.username if room.owner else None,
+                    'isPublic': room.is_public,
+                    'password': room.password
+                }
+
+        if not room_data:
+             return Response({'error': 'Room not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # 2. Access Control Logic
+        is_public = room_data.get('isPublic', True)
+        if not is_public:
+            # Check owner
+            owner = room_data.get('owner')
+            if request.user.is_authenticated and request.user.username == owner:
+                pass # Owner has access
+            else:
+                # Check Password
+                provided_password = request.headers.get('X-Room-Password') or request.query_params.get('password')
+                correct_password = room_data.get('password', '')
+                
+                if provided_password != correct_password:
+                     return Response({
+                         'error': 'Password required',
+                         'isPublic': False,
+                         'roomId': room_id
+                     }, status=status.HTTP_403_FORBIDDEN)
+
+        # 3. Return Data (Sanitize Password)
+        return Response({
+            'roomId': room_data.get('roomId'),
+            'code': room_data.get('code', ''),
+            'language': room_data.get('language', 'javascript'),
+            'messages': room_data.get('messages', []), # Usually empty in detail view unless synced
+            'owner': room_data.get('owner'),
+            'isPublic': is_public
+        })
 
 # AI Endpoints
 class AIChatView(APIView):
@@ -417,3 +579,59 @@ class LeaderboardView(APIView):
         
         # Return top 10
         return Response(leaderboard[:10])
+
+class QuizListView(generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = QuizSerializer
+    queryset = Quiz.objects.all()
+
+class QuizDetailView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = QuizDetailSerializer
+    queryset = Quiz.objects.all()
+    lookup_field = 'id'
+
+class QuizSubmitView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, quiz_id):
+        try:
+            quiz = Quiz.objects.get(id=quiz_id)
+            answers = request.data.get('answers', {}) # Dict: { question_id: option_index }
+            
+            score = 0
+            total = quiz.questions.count()
+            results = []
+
+            for question in quiz.questions.all():
+                user_answer = answers.get(str(question.id))
+                is_correct = False
+                if user_answer is not None and int(user_answer) == question.correct_answer:
+                    score += 1
+                    is_correct = True
+                
+                results.append({
+                    'question_id': question.id,
+                    'is_correct': is_correct,
+                    'correct_answer': question.correct_answer,
+                    'explanation': question.explanation
+                })
+            
+            # Save result
+            QuizResult.objects.create(
+                user=request.user,
+                quiz=quiz,
+                score=score,
+                total_questions=total
+            )
+
+            return Response({
+                'score': score,
+                'total': total,
+                'results': results
+            })
+
+        except Quiz.DoesNotExist:
+            return Response({'error': 'Quiz not found'}, status=404)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { FaSignOutAlt, FaUser, FaCode } from 'react-icons/fa';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -23,13 +23,15 @@ const Navbar = () => {
             // borderBottom: '1px solid #334155' /* Removing border for clean look */
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                <Link to="/" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6', textDecoration: 'none' }}>
-                    CodeConnect
+                <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '1.5rem', fontWeight: 'bold', color: '#3b82f6', textDecoration: 'none' }}>
+                    <FaCode size={28} />
+                    <span>CodeConnect</span>
                 </Link>
                 {user && (
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <Link to="/dashboard" style={{ color: '#94a3b8', textDecoration: 'none' }}>Dashboard</Link>
-                        <Link to="/leaderboard" style={{ color: '#94a3b8', textDecoration: 'none' }}>Leaderboard</Link>
+                        <Link to="/dashboard" style={{ color: location.pathname === '/dashboard' ? 'white' : '#94a3b8', textDecoration: 'none', fontWeight: location.pathname === '/dashboard' ? '600' : '400' }}>Dashboard</Link>
+                        <Link to="/problems" style={{ color: location.pathname === '/problems' ? 'white' : '#94a3b8', textDecoration: 'none', fontWeight: location.pathname === '/problems' ? '600' : '400' }}>Problems</Link>
+                        <Link to="/leaderboard" style={{ color: location.pathname === '/leaderboard' ? 'white' : '#94a3b8', textDecoration: 'none', fontWeight: location.pathname === '/leaderboard' ? '600' : '400' }}>Leaderboard</Link>
                     </div>
                 )}
             </div>
@@ -37,10 +39,14 @@ const Navbar = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 {user ? (
                     <>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <FaUser />
-                            <span>{user.name || user.username}</span>
-                        </div>
+                        <Link to="/profile" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', color: 'white', background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: '20px', transition: 'background 0.2s' }}>
+                            <img
+                                src={user.avatar || `https://ui-avatars.com/api/?name=${user.username}`}
+                                alt="Avatar"
+                                style={{ width: '24px', height: '24px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.2)' }}
+                            />
+                            <span style={{ fontWeight: '500', fontSize: '0.9rem' }}>{user.username}</span>
+                        </Link>
                         <button
                             onClick={logout}
                             style={{

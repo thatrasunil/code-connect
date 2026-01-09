@@ -6,7 +6,7 @@ from .views import (
     DashboardStatsView, MyRoomsView, FileUploadView,
     RoomMetadataView, RoomLanguageView, RoomCodeView, RootView,
     RoomMessageView, TypingStatusView, RoomTypingView, LeaderboardView, HeartbeatView, RoomParticipantsView,
-    AIChatView, AIExplainView, AIInterviewView
+    AIChatView, AIExplainView, AIInterviewView, QuizListView, QuizDetailView, QuizSubmitView
 )
 from .views_interview import QuestionListView, InterviewSessionView, InterviewHistoryView
 from .views_execution import ExecuteCodeView, SubmitSolutionView
@@ -37,7 +37,7 @@ urlpatterns = [
 
     # Rooms
     path('api/create-room', CreateRoomView.as_view(), name='create-room'),
-    path('api/room/<str:room_id>', RoomDetailView.as_view(), name='room-detail'),
+    path('api/rooms/<str:room_id>/', RoomDetailView.as_view(), name='room-detail'),
     path('api/rooms/<str:room_id>/messages', RoomMessageView.as_view(), name='room-messages'),
     path('api/rooms/<str:room_id>/typing', TypingStatusView.as_view(), name='room-typing-status'),
     path('api/rooms/<str:room_id>/typing/active', RoomTypingView.as_view(), name='room-typing-active'),
@@ -57,4 +57,8 @@ urlpatterns = [
     path('api/rooms/<str:room_id>/assign-role', AssignRoleView.as_view(), name='assign-role'),
     path('api/rooms/<str:room_id>/permissions', RoomPermissionsView.as_view(), name='room-permissions'),
     path('api/rooms/<str:room_id>/participants-roles', RoomParticipantsRolesView.as_view(), name='participants-roles'),
+    # Quizzes
+    path('api/quizzes', QuizListView.as_view(), name='quiz-list'),
+    path('api/quizzes/<str:id>', QuizDetailView.as_view(), name='quiz-detail'),
+    path('api/quizzes/<str:quiz_id>/submit', QuizSubmitView.as_view(), name='quiz-submit'),
 ]

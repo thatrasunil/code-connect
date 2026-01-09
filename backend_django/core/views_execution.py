@@ -33,28 +33,42 @@ class ExecuteCodeView(APIView):
         total_count = len(test_cases) if isinstance(test_cases, list) else test_cases.count()
         
         # Execute code against test cases
-        for tc in test_cases:
-            if hasattr(tc, 'input_data'):
-                input_data = tc.input_data
-                expected = tc.expected_output
-            else:
-                input_data = tc['input_data']
-                expected = tc['expected_output']
-            
-            result = self._execute_code(code, language, input_data)
-            
-            passed = str(result['output']).strip() == str(expected).strip()
-            if passed:
-                passed_count += 1
-            
+        if not test_cases:
+            # Single run mode (no test cases)
+            result = self._execute_code(code, language, '')
             results.append({
-                'input': input_data,
-                'expected': expected,
+                'input': '',
+                'expected': '',
                 'actual': result['output'],
-                'passed': passed,
+                'passed': True,
                 'runtime': result['runtime'],
                 'error': result.get('error')
             })
+            passed_count = 1 if not result.get('error') else 0
+            total_count = 1
+        else:
+            for tc in test_cases:
+                if hasattr(tc, 'input_data'):
+                    input_data = tc.input_data
+                    expected = tc.expected_output
+                else:
+                    input_data = tc['input_data']
+                    expected = tc['expected_output']
+                
+                result = self._execute_code(code, language, input_data)
+                
+                passed = str(result['output']).strip() == str(expected).strip()
+                if passed:
+                    passed_count += 1
+                
+                results.append({
+                    'input': input_data,
+                    'expected': expected,
+                    'actual': result['output'],
+                    'passed': passed,
+                    'runtime': result['runtime'],
+                    'error': result.get('error')
+                })
         
         # Determine overall status
         if passed_count == total_count:
@@ -62,7 +76,7 @@ class ExecuteCodeView(APIView):
         elif passed_count > 0:
             overall_status = 'Wrong Answer'
         else:
-            overall_status = 'Wrong Answer'
+            overall_status = 'Error' if any(r.get('error') for r in results) else 'Wrong Answer'
         
         return Response({
             'results': results,
@@ -72,48 +86,71 @@ class ExecuteCodeView(APIView):
         })
 
     def _execute_code(self, code, language, input_data):
-        """
-        Simple code execution for JavaScript only (client-side safe)
-        For production, integrate Judge0 or Piston API
-        """
-        start_time = time.time()
-        
-        if language == 'javascript':
-            try:
-                # Parse input if JSON
+        import subprocess
+        import tempfile
+        import os
+
+        # Timeout in seconds
+        TIMEOUT = 5
+
+        try:
+            if language == 'python':
+                # Create a temporary python file
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False, encoding='utf-8') as f:
+                    f.write(code)
+                    temp_path = f.name
+                
                 try:
-                    input_obj = json.loads(input_data)
-                except:
-                    input_obj = input_data
+                    # Run the python script
+                    process = subprocess.run(
+                        ['python', temp_path],
+                        input=str(input_data) if input_data else '',
+                        text=True,
+                        capture_output=True,
+                        timeout=TIMEOUT
+                    )
+                    runtime = 0 
+                    return {
+                        'output': process.stdout,
+                        'error': process.stderr,
+                        'runtime': runtime
+                    }
+                finally:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+
+            elif language == 'javascript':
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8') as f:
+                    f.write(code)
+                    temp_path = f.name
                 
-                # Wrap code in function and execute
-                # This is a simplified approach - in production use a sandbox
-                exec_code = f'''
-function solution(input) {{
-    {code}
-}}
-result = solution({json.dumps(input_obj)});
-'''
-                local_vars = {}
-                exec(self._js_to_python(exec_code), {}, local_vars)
-                output = local_vars.get('result', '')
-                
-                runtime = int((time.time() - start_time) * 1000)
-                return {'output': output, 'runtime': runtime}
-            except Exception as e:
-                return {'output': '', 'runtime': 0, 'error': str(e)}
-        else:
-            return {'output': 'Language not supported yet', 'runtime': 0, 'error': 'Only JavaScript is supported in this version'}
-    
-    def _js_to_python(self, js_code):
-        """Basic JS to Python conversion for simple cases"""
-        # This is a very basic converter - for production use a proper JS engine
-        python_code = js_code.replace('function ', 'def ')
-        python_code = python_code.replace('const ', '')
-        python_code = python_code.replace('let ', '')
-        python_code = python_code.replace('var ', '')
-        python_code = python_code.replace('return', 'result =')
-        return python_code
+                try:
+                    process = subprocess.run(
+                        ['node', temp_path],
+                        input=str(input_data) if input_data else '',
+                        text=True,
+                        capture_output=True,
+                        timeout=TIMEOUT
+                    )
+                    return {
+                        'output': process.stdout,
+                        'error': process.stderr,
+                        'runtime': 0
+                    }
+                finally:
+                    if os.path.exists(temp_path):
+                        os.remove(temp_path)
+
+            else:
+                return {'output': '', 'error': f'Language {language} not supported', 'runtime': 0}
+
+        except subprocess.TimeoutExpired:
+            return {'output': '', 'error': 'Execution timed out', 'runtime': TIMEOUT * 1000}
+        except Exception as e:
+            return {'output': '', 'error': f'System Error: {str(e)}', 'runtime': 0}
+
+    def _unused_js_to_python(self):
+        pass
 
 
 class SubmitSolutionView(APIView):

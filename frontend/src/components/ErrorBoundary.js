@@ -54,7 +54,11 @@ class ErrorBoundary extends React.Component {
                             maxWidth: '100%',
                             overflow: 'auto'
                         }}>
-                            <code style={{ whiteSpace: 'pre-wrap' }}>{this.state.error.toString()}</code>
+                            <code style={{ whiteSpace: 'pre-wrap' }}>
+                                {typeof this.state.error === 'object' ? JSON.stringify(this.state.error, null, 2) : String(this.state.error)}
+                                {'\n\nComponent Stack:\n'}
+                                {this.state.errorInfo ? this.state.errorInfo.componentStack : ''}
+                            </code>
                         </div>
                     )}
 

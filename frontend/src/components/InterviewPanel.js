@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaClock, FaList, FaStickyNote, FaPlay, FaPause, FaRedo, FaSave } from 'react-icons/fa';
 import config from '../config';
-import { useAuth } from '../contexts/AuthContext';
 
-const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
+const InterviewPanel = ({ socket, roomId, onPostQuestion, initialQuestionId }) => {
     const [activeTab, setActiveTab] = useState('questions'); // questions, notes
     const [timer, setTimer] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
@@ -14,7 +13,8 @@ const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
     const [selectedQuestion, setSelectedQuestion] = useState(null);
     const [testCases, setTestCases] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const { token } = useAuth();
+    const token = localStorage.getItem('token'); // Token stored in localStorage
+    const hasInitializedRef = useState(false); // To prevent double posting
 
     useEffect(() => {
         const loadQuestions = async () => {
@@ -47,6 +47,18 @@ const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
         loadSession();
     }, [roomId]);
 
+    // Auto-select question from URL param
+    useEffect(() => {
+        if (questions.length > 0 && initialQuestionId && !selectedQuestion) {
+            const q = questions.find(q => q.id.toString() === initialQuestionId.toString());
+            if (q) {
+                handlePostQuestion(q);
+                // Clear the param from URL without reloading to avoid re-posting on refresh? 
+                // Actually, let's just keep it simple. If user refreshes, it re-posts. That's fine for now.
+            }
+        }
+    }, [questions, initialQuestionId]);
+
     useEffect(() => {
         let interval;
         if (isRunning) {
@@ -62,7 +74,8 @@ const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
     };
 
     const handlePostQuestion = (q) => {
-        const text = `// QUESTION: ${q.title} (${q.difficulty})\n// ${q.content}\n\n`;
+        const contentLines = q.content.split('\n').map(line => `// ${line}`).join('\n');
+        const text = `// QUESTION: ${q.title} (${q.difficulty})\n${contentLines}\n\n`;
         onPostQuestion(text);
         setSelectedQuestion(q);
         // Load test cases for this question (mock for now)
@@ -142,22 +155,60 @@ const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
                                 Loading problem library...
                             </div>
                         ) : (
-                            questions.map(q => (
-                                <div key={q.id} className="question-item glass-card" style={{ padding: '1rem', borderLeft: `3px solid ${q.difficulty === 'Easy' ? '#10b981' : '#f59e0b'}` }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontWeight: 'bold' }}>{q.title}</span>
-                                        <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{q.difficulty}</span>
+                            <>
+                                <button
+                                    onClick={async () => {
+                                        setIsLoading(true);
+                                        try {
+                                            const res = await fetch(`${config.BACKEND_URL}/api/ai/interview`, {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ difficulty: 'Medium', topic: 'Algorithms' })
+                                            });
+                                            if (res.ok) {
+                                                const data = await res.json();
+                                                // Ensure content is a string
+                                                const contentStr = typeof data.response === 'object' ? JSON.stringify(data.response) : String(data.response || 'No response');
+
+                                                const newQ = {
+                                                    id: Date.now(),
+                                                    title: 'AI Generated Question',
+                                                    difficulty: 'Medium',
+                                                    content: contentStr
+                                                };
+                                                setQuestions(prev => [newQ, ...prev]);
+                                            } else {
+                                                const errText = await res.text();
+                                                console.error("AI Gen Error:", errText);
+                                                alert("AI Generation Failed: Server Error");
+                                            }
+                                        } catch (e) { console.error(e); alert("AI Generation Failed: " + e.message); }
+                                        finally { setIsLoading(false); }
+                                    }}
+                                    className="btn primary-btn"
+                                    style={{ marginBottom: '1rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                >
+                                    <FaRedo /> Generate New Question with AI
+                                </button>
+                                {questions.map(q => (
+                                    <div key={q.id} className="question-item glass-card" style={{ padding: '1rem', borderLeft: `3px solid ${q.difficulty === 'Easy' ? '#10b981' : '#f59e0b'}` }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontWeight: 'bold' }}>{typeof q.title === 'object' ? JSON.stringify(q.title) : String(q.title)}</span>
+                                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{typeof q.difficulty === 'object' ? JSON.stringify(q.difficulty) : String(q.difficulty)}</span>
+                                        </div>
+                                        <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                                            {typeof q.content === 'object' ? JSON.stringify(q.content) : String(q.content)}
+                                        </p>
+                                        <button
+                                            onClick={() => handlePostQuestion(q)}
+                                            className="btn"
+                                            style={{ width: '100%', fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)' }}
+                                        >
+                                            Post to Editor
+                                        </button>
                                     </div>
-                                    <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>{q.content}</p>
-                                    <button
-                                        onClick={() => handlePostQuestion(q)}
-                                        className="btn"
-                                        style={{ width: '100%', fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)' }}
-                                    >
-                                        Post to Editor
-                                    </button>
-                                </div>
-                            ))
+                                ))}
+                            </>
                         )}
                     </div>
                 ) : activeTab === 'notes' ? (

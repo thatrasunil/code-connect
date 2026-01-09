@@ -8,3 +8,4 @@ python-dotenv
 asgiref
 djangorestframework-simplejwt
 google-generativeai
+requests

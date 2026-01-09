@@ -1,7 +1,8 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const mongoose = require('mongoose');
+const admin = require('firebase-admin'); // Firebase Admin
+const { getFirestore } = require('firebase-admin/firestore');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const crypto = require('crypto');
@@ -52,39 +53,39 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
-// --- Database Connection ---
-async function connectDB() {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/codeconnect');
-    console.log('MongoDB connected successfully');
-  } catch (err) {
-    console.error('MongoDB connection error:', err.message);
-    console.log('Server will start without DB - features limited to in-memory only.');
-  }
-}
-connectDB();
+// --- Database Connection (Firebase Firestore) ---
+let db;
+let isFirestoreConnected = false;
 
-// --- In-memory Stores ---
+try {
+  // Check for service account - normally provided via GOOGLE_APPLICATION_CREDENTIALS
+  // or passed directly. For now, we'll try default app or warn.
+  if (!admin.apps.length) {
+    if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+      console.log("Firebase Admin initialized with SERVICE_ACCOUNT env var");
+    } else {
+      // Attempt default initialization (works on GCP/Render if env vars set)
+      admin.initializeApp();
+      console.log("Firebase Admin initialized with default credentials");
+    }
+  }
+  db = getFirestore();
+  isFirestoreConnected = true;
+  console.log('Firestore connected successfully');
+} catch (err) {
+  console.warn('Firebase connection warning:', err.message);
+  console.log('Server will start with IN-MEMORY storage only.');
+  console.log('To enable persistence, set FIREBASE_SERVICE_ACCOUNT or GOOGLE_APPLICATION_CREDENTIALS');
+}
+
+// --- In-memory Stores (Fallback) ---
 const localRooms = new Map();
 const activeRooms = new Map(); // roomId -> Map<userId, connectionCount>
 const socketIdToUserId = new Map(); // socket.id -> userId
-
-// --- Schemas & Models ---
-const roomSchema = new mongoose.Schema({
-  roomId: { type: String, unique: true, required: true },
-  code: { type: String, default: '' },
-  language: { type: String, default: 'javascript' },
-  messages: [{
-    userId: String,
-    content: String,
-    type: { type: String, enum: ['text'], default: 'text' },
-    timestamp: { type: Date, default: Date.now }
-  }],
-  users: [{ userId: String, joinedAt: { type: Date, default: Date.now } }],
-  createdAt: { type: Date, default: Date.now }
-});
-
-const Room = mongoose.model('Room', roomSchema);
 
 // --- API Routes ---
 function generateRoomId() {
@@ -95,20 +96,20 @@ function generateRoomId() {
 app.post('/api/create-room', async (req, res) => {
   const roomId = generateRoomId();
 
+  const roomData = {
+    roomId,
+    code: '',
+    language: 'javascript',
+    messages: [],
+    users: [],
+    createdAt: new Date().toISOString() // Firestore prefers standard formats or Timestamps
+  };
+
   try {
-    if (mongoose.connection.readyState === 1) {
-      const room = new Room({ roomId });
-      await room.save();
+    if (isFirestoreConnected) {
+      await db.collection('rooms').doc(roomId).set(roomData);
     } else {
       console.log('Creating room in memory:', roomId);
-      const roomData = {
-        roomId,
-        code: '',
-        language: 'javascript',
-        messages: [],
-        users: [],
-        createdAt: new Date()
-      };
       localRooms.set(roomId, roomData);
     }
     res.json({ roomId });
@@ -122,8 +123,11 @@ app.get('/api/room/:roomId', async (req, res) => {
   const { roomId } = req.params;
   try {
     let room;
-    if (mongoose.connection.readyState === 1) {
-      room = await Room.findOne({ roomId });
+    if (isFirestoreConnected) {
+      const doc = await db.collection('rooms').doc(roomId).get();
+      if (doc.exists) {
+        room = doc.data();
+      }
     } else {
       room = localRooms.get(roomId);
     }
@@ -131,7 +135,7 @@ app.get('/api/room/:roomId', async (req, res) => {
     if (room) {
       res.json(room);
     } else {
-      // Loose behavior for testing
+      // Return defaults if not found
       res.json({ code: '', language: 'javascript', messages: [] });
     }
   } catch (err) {
@@ -188,20 +192,29 @@ io.on('connection', (socket) => {
 
     // Update DB/Local user list
     let room;
-    if (mongoose.connection.readyState === 1) {
-      room = await Room.findOne({ roomId });
-      if (room) {
-        if (!room.users.find(u => u.userId === userId)) {
-          room.users.push({ userId });
-          await room.save();
+    if (isFirestoreConnected) {
+      const roomRef = db.collection('rooms').doc(roomId);
+      const doc = await roomRef.get();
+      if (doc.exists) {
+        room = doc.data();
+        // Add user if not present (simple check)
+        const userExists = room.users && room.users.some(u => u.userId === userId);
+        if (!userExists) {
+          await roomRef.update({
+            users: admin.firestore.FieldValue.arrayUnion({ userId, joinedAt: new Date().toISOString() })
+          });
         }
       } else {
-        // Fallback for non-existent room in DB
-        room = await Room.findOneAndUpdate(
-          { roomId },
-          { $setOnInsert: { roomId, code: '', language: 'javascript', messages: [], users: [{ userId }] } },
-          { new: true, upsert: true }
-        );
+        // Upsert handled slightly differently in Firestore, usually create first but fallback here
+        const newRoom = {
+          roomId,
+          code: '',
+          language: 'javascript',
+          messages: [],
+          users: [{ userId, joinedAt: new Date().toISOString() }]
+        };
+        await roomRef.set(newRoom);
+        room = newRoom;
       }
     } else {
       if (!localRooms.has(roomId)) localRooms.set(roomId, { roomId, code: '', language: 'javascript', messages: [], users: [] });
@@ -218,8 +231,8 @@ io.on('connection', (socket) => {
     if (room) {
       socket.emit('room-joined', {
         roomId,
-        code: room.code,
-        language: room.language,
+        code: room.code || '',
+        language: room.language || 'javascript',
         messages: room.messages || [],
         participants: activeParticipants,
         users: activeCount
@@ -232,8 +245,9 @@ io.on('connection', (socket) => {
 
   socket.on('code-change', async (data) => {
     const { roomId, code, language } = data;
-    if (mongoose.connection.readyState === 1) {
-      await Room.updateOne({ roomId }, { code, language });
+    if (isFirestoreConnected) {
+      // Debounce or just fire and forget usually, but here we await
+      await db.collection('rooms').doc(roomId).update({ code, language }).catch(e => console.error('Code update failed', e));
     } else {
       const room = localRooms.get(roomId);
       if (room) { room.code = code; room.language = language; }
@@ -247,10 +261,12 @@ io.on('connection', (socket) => {
 
   socket.on('send-message', async (data) => {
     const { roomId, id, content, userId, type = 'text' } = data;
-    const newMessage = { id, userId, content, type, timestamp: new Date() };
+    const newMessage = { id, userId, content, type, timestamp: new Date().toISOString() };
 
-    if (mongoose.connection.readyState === 1) {
-      await Room.updateOne({ roomId }, { $push: { messages: newMessage } });
+    if (isFirestoreConnected) {
+      await db.collection('rooms').doc(roomId).update({
+        messages: admin.firestore.FieldValue.arrayUnion(newMessage)
+      }).catch(e => console.error('Message update failed', e));
     } else {
       const room = localRooms.get(roomId);
       if (room) {
@@ -270,8 +286,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('end-room', async (roomId, userId) => {
-    if (mongoose.connection.readyState === 1) {
-      await Room.updateOne({ roomId }, { code: '', language: 'javascript', messages: [], endedAt: new Date() });
+    if (isFirestoreConnected) {
+      await db.collection('rooms').doc(roomId).update({
+        code: '',
+        language: 'javascript',
+        messages: [],
+        endedAt: new Date().toISOString()
+      }).catch(e => console.error('End room failed', e));
     } else {
       const room = localRooms.get(roomId);
       if (room) { room.code = ''; room.messages = []; room.endedAt = new Date(); }

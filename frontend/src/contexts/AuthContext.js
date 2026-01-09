@@ -1,23 +1,56 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import {
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    signInWithPopup,
+    GoogleAuthProvider,
+    signOut,
+    updateProfile
+} from 'firebase/auth';
+import { auth } from '../firebase';
 import config from '../config';
 
 const AuthContext = createContext();
 
 export const useAuth = () => useContext(AuthContext);
 
+// Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [firebaseUser, setFirebaseUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
+    const [authMethod, setAuthMethod] = useState(null); // 'firebase' or 'backend'
 
     const BACKEND_URL = config.BACKEND_URL;
 
+    // Listen for Firebase auth state changes
     useEffect(() => {
-        checkUserLoggedIn();
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUserData) => {
+            if (firebaseUserData) {
+                setFirebaseUser(firebaseUserData);
+                setUser({
+                    id: firebaseUserData.uid,
+                    username: firebaseUserData.displayName || firebaseUserData.email?.split('@')[0],
+                    email: firebaseUserData.email,
+                    photoURL: firebaseUserData.photoURL,
+                    provider: 'firebase'
+                });
+                setAuthMethod('firebase');
+                setLoading(false);
+            } else {
+                // Check for backend JWT auth if no Firebase user
+                checkBackendAuth();
+            }
+        });
+
+        return () => unsubscribe();
     }, []);
 
-    const checkUserLoggedIn = async () => {
+    const checkBackendAuth = async () => {
         const token = localStorage.getItem('token');
         if (token) {
             try {
@@ -26,6 +59,7 @@ export const AuthProvider = ({ children }) => {
                     logout();
                 } else {
                     await fetchUserProfile(token);
+                    setAuthMethod('backend');
                 }
             } catch (err) {
                 console.error("Token invalid", err);
@@ -42,7 +76,7 @@ export const AuthProvider = ({ children }) => {
             });
             if (res.ok) {
                 const userData = await res.json();
-                setUser(userData);
+                setUser({ ...userData, provider: 'backend' });
             } else {
                 logout();
             }
@@ -52,6 +86,41 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Firebase Email/Password Login
+    const loginWithFirebase = async (email, password) => {
+        try {
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            return { success: true, user: result.user };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Firebase Google Sign-In
+    const loginWithGoogle = async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            return { success: true, user: result.user };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Firebase Email/Password Registration
+    const registerWithFirebase = async (email, password, displayName) => {
+        try {
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            // Update profile with display name
+            if (displayName) {
+                await updateProfile(result.user, { displayName });
+            }
+            return { success: true, user: result.user };
+        } catch (err) {
+            return { success: false, error: err.message };
+        }
+    };
+
+    // Backend JWT Login (existing)
     const login = async (username, password) => {
         try {
             const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
@@ -65,15 +134,21 @@ export const AuthProvider = ({ children }) => {
                 localStorage.setItem('token', data.access);
                 localStorage.setItem('refresh', data.refresh);
                 await fetchUserProfile(data.access);
+                setAuthMethod('backend');
                 return { success: true };
             } else {
-                return { success: false, error: data.detail || "Login failed" };
+                let errorMsg = "Login failed";
+                if (data.detail) {
+                    errorMsg = typeof data.detail === 'object' ? JSON.stringify(data.detail) : String(data.detail);
+                }
+                return { success: false, error: errorMsg };
             }
         } catch (err) {
             return { success: false, error: "Network error" };
         }
     };
 
+    // Backend Registration (existing)
     const register = async (username, email, password) => {
         try {
             const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
@@ -83,27 +158,62 @@ export const AuthProvider = ({ children }) => {
             });
 
             if (res.ok) {
-                // Auto-login after register? Or just return success
                 return { success: true };
             } else {
                 const data = await res.json();
-                // Format error message from Django serializer errors
-                const errorMsg = Object.values(data).flat().join(', ');
-                return { success: false, error: errorMsg || "Registration failed" };
+                let errorMsg = "Registration failed";
+                try {
+                    // Try to flatten Django field errors
+                    errorMsg = Object.keys(data).map(key => {
+                        const val = data[key];
+                        return `${key}: ${Array.isArray(val) ? val.join(' ') : String(val)}`;
+                    }).join(', ');
+                } catch (e) {
+                    errorMsg = JSON.stringify(data);
+                }
+                return { success: false, error: errorMsg };
             }
         } catch (err) {
             return { success: false, error: "Network error" };
         }
     };
 
-    const logout = () => {
+    // Universal Logout
+    const logout = async () => {
+        // Clear backend tokens
         localStorage.removeItem('token');
         localStorage.removeItem('refresh');
+
+        // Sign out from Firebase
+        try {
+            await signOut(auth);
+        } catch (err) {
+            console.error('Firebase signout error:', err);
+        }
+
         setUser(null);
+        setFirebaseUser(null);
+        setAuthMethod(null);
+    };
+
+    const value = {
+        user,
+        firebaseUser,
+        authMethod,
+        loading,
+        // Backend auth methods
+        login,
+        register,
+        // Firebase auth methods
+        loginWithFirebase,
+        loginWithGoogle,
+        registerWithFirebase,
+        // Universal
+        logout
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider value={value}>
             {!loading && children}
         </AuthContext.Provider>
     );

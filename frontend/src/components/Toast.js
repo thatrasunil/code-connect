@@ -34,7 +34,9 @@ const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
             layout
         >
             {getIcon()}
-            <span className="toast-message">{message}</span>
+            <span className="toast-message">
+                {typeof message === 'object' ? JSON.stringify(message) : String(message)}
+            </span>
             <button onClick={onClose} className="toast-close">×</button>
         </motion.div>
     );

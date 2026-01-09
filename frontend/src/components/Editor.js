@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
-import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaShareAlt, FaRobot, FaDownload, FaCopy, FaHistory } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaShareAlt, FaRobot, FaDownload, FaCopy, FaHistory, FaLock } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAuth } from '../contexts/AuthContext';
 import ChatPanel from './ChatPanel';
@@ -20,8 +20,18 @@ const MemoizedOutputPanel = React.memo(OutputPanel);
 const CodeEditor = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
-    const { user, token } = useAuth();
-    const [socket, setSocket] = useState(null);
+    const location = useLocation();
+    const { user } = useAuth();
+    const token = localStorage.getItem('token');
+
+    // Auth State
+    const [isLocked, setIsLocked] = useState(false);
+    const [roomPassword, setRoomPassword] = useState('');
+    const [passwordInput, setPasswordInput] = useState('');
+    const [accessError, setAccessError] = useState('');
+
+    const queryParams = new URLSearchParams(location.search);
+    const initialQuestionId = queryParams.get('questionId');
 
     // State
     const [code, setCode] = useState('// Write your code here...');
@@ -33,18 +43,17 @@ const CodeEditor = () => {
     });
 
     const [showSettings, setShowSettings] = useState(false);
-    const [snapshots, setSnapshots] = useState([]); // Simplified history for now
+    const [snapshots, setSnapshots] = useState([]);
     const [output, setOutput] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
     const lastSavedCodeRef = useRef(code);
-    const lastFetchedCodeRef = useRef('');
-    const lastTypeTimeRef = useRef(0); // To prevent overwriting while user is typing
-    const isTypingRef = useRef(false); // Ref for immediate access in intervals
+    const lastTypeTimeRef = useRef(0);
+    const isTypingRef = useRef(false);
 
     // Panels
     const [showChat, setShowChat] = useState(true);
-    const [showInterview, setShowInterview] = useState(true); // Left panel (LeetCode style)
-    const [aiMode, setAiMode] = useState(false); // AI Assistance Mode
+    const [showInterview, setShowInterview] = useState(true);
+    const [aiMode, setAiMode] = useState(false);
 
     // Real-time Data
     const [participants, setParticipants] = useState([]);
@@ -57,25 +66,67 @@ const CodeEditor = () => {
     const editorRef = useRef(null);
     const monaco = useMonaco();
 
-    // Socket Connection Removed
+    // Helper for Authenticated Requests with Password
+    const authenticatedFetch = async (url, options = {}) => {
+        const headers = {
+            ...options.headers,
+            'Authorization': token ? `Bearer ${token}` : '',
+            'X-Room-Password': roomPassword
+        };
+        return fetch(url, { ...options, headers });
+    };
+
+    // 1. Initial Access Check
     useEffect(() => {
-        // Load from local storage if available
+        const checkAccess = async () => {
+            try {
+                // Check Room Detail (which now enforces password)
+                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/`, {
+                    headers: {
+                        'Authorization': token ? `Bearer ${token}` : '',
+                        'X-Room-Password': roomPassword
+                    }
+                });
+
+                if (res.status === 403) {
+                    setIsLocked(true);
+                    return;
+                }
+
+                if (res.ok) {
+                    setIsLocked(false);
+                    setAccessError('');
+                    const data = await res.json();
+                    if (data.language) setLanguage(data.language);
+                    if (data.code) setCode(data.code);
+                }
+            } catch (err) {
+                console.error("Access Check Failed", err);
+            }
+        };
+        checkAccess();
+    }, [roomId, token, roomPassword]);
+
+    const handleUnlock = (e) => {
+        e.preventDefault();
+        setRoomPassword(passwordInput); // Triggers effect to retry
+    };
+
+    // Load Local Backup
+    useEffect(() => {
         const savedCode = localStorage.getItem(`code_backup_${roomId}`);
         if (savedCode && savedCode !== code) {
-            // Optional: You could ask the user if they want to restore, but for now we auto-restore
-            // or we could only restore if it's different from default.
-            // A better check might be to see if backend brings empty code, then restore local.
-            // For now, we trust local if it exists.
             setCode(savedCode);
         }
     }, [roomId]);
 
     // Fetch user permissions
     useEffect(() => {
+        if (isLocked) return;
         const fetchPermissions = async () => {
             try {
                 const userId = user?.username || 'Guest';
-                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/permissions?userId=${userId}`);
+                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/permissions?userId=${userId}`);
                 if (res.ok) {
                     const data = await res.json();
                     setUserRole(data.role);
@@ -86,14 +137,15 @@ const CodeEditor = () => {
             }
         };
         fetchPermissions();
-    }, [roomId, user]);
+    }, [roomId, user, isLocked, roomPassword]);
 
     // Polling for Messages and Typing Status
-    // Polling for Messages and Typing Status
     useEffect(() => {
+        if (isLocked) return;
+
         const fetchMessages = async () => {
             try {
-                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`);
+                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`);
                 if (res.ok) {
                     const data = await res.json();
                     if (Array.isArray(data)) setMessages(data);
@@ -104,7 +156,7 @@ const CodeEditor = () => {
 
         const fetchParticipants = async () => {
             try {
-                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/participants`);
+                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/participants`);
                 if (res.ok) {
                     const data = await res.json();
                     setParticipants(data);
@@ -114,7 +166,7 @@ const CodeEditor = () => {
 
         const fetchTypingUsers = async () => {
             try {
-                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing/active`);
+                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing/active`);
                 if (res.ok) {
                     const users = await res.json();
                     const myUserId = user?.username || 'Guest';
@@ -125,7 +177,7 @@ const CodeEditor = () => {
 
         const sendHeartbeat = async () => {
             try {
-                await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/heartbeat`, {
+                await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/heartbeat`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -142,20 +194,18 @@ const CodeEditor = () => {
 
             try {
                 // Fetch Code
-                const resCode = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/code/`);
+                const resCode = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/code/`);
                 if (resCode.ok) {
                     const data = await resCode.json();
                     // Only update if content is different and we are not currently saving
                     if (data.content !== lastSavedCodeRef.current && data.content !== code) {
-                        // Simple check: In a real app, use operational transformation or CRDTs. 
-                        // Here we assume last-write-wins but careful not to overwrite active typing.
                         setCode(data.content);
                         lastSavedCodeRef.current = data.content;
                     }
                 }
 
                 // Fetch Language
-                const resLang = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/metadata/`);
+                const resLang = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/metadata/`);
                 if (resLang.ok) {
                     const data = await resLang.json();
                     if (data.language && data.language !== language) {
@@ -182,26 +232,22 @@ const CodeEditor = () => {
         }, 3000); // Poll every 3 seconds
 
         return () => clearInterval(interval);
-    }, [roomId, user]);
+    }, [roomId, user, isLocked, roomPassword]);
 
     // Auto-Save
     useEffect(() => {
+        if (isLocked) return;
         const interval = setInterval(async () => {
             if (editorRef.current) {
                 const currentCode = editorRef.current.getValue();
-
-                // Only save if changed
                 if (currentCode !== lastSavedCodeRef.current) {
                     setIsSaving(true);
                     localStorage.setItem(`code_backup_${roomId}`, currentCode);
 
                     try {
-                        await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/code/`, {
+                        await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/code/`, {
                             method: 'PUT',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ content: currentCode })
                         });
                         lastSavedCodeRef.current = currentCode;
@@ -212,33 +258,58 @@ const CodeEditor = () => {
                     }
                 }
             }
-        }, 2000); // Check for save every 2 seconds
+        }, 2000);
         return () => clearInterval(interval);
-    }, [roomId, token]);
+    }, [roomId, token, isLocked, roomPassword]);
 
     // Handlers
     const handleEditorChange = (value) => {
         setCode(value);
-        lastTypeTimeRef.current = Date.now(); // Mark user as active typing
+        lastTypeTimeRef.current = Date.now();
         localStorage.setItem(`code_backup_${roomId}`, value);
     };
 
     const handleRunCode = async () => {
-        setOutput([{ type: 'info', content: 'Running code...' }]);
-        setTimeout(() => {
-            try {
-                // eslint-disable-next-line
-                const result = eval(code);
-                setOutput([
-                    { type: 'info', content: '> Code Executed:' },
-                    { type: 'success', content: String(result) }
-                ]);
-            } catch (err) {
-                setOutput([
-                    { type: 'error', content: `Error: ${err.message}` }
-                ]);
+        setOutput([{ type: 'info', content: `Running ${language} code...` }]);
+
+        try {
+            const res = await authenticatedFetch(`${config.BACKEND_URL}/api/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code,
+                    language,
+                    testCases: []
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                const runResult = data.results && data.results.length > 0 ? data.results[0] : null;
+                if (runResult) {
+                    // ... (keep existing logic)
+                    if (runResult.error) {
+                        const errorContent = `Error: ${runResult.error}`;
+                        const outputLines = [{ type: 'error', content: errorContent }];
+                        if (language === 'javascript' && (runResult.error.includes('print is not defined') || runResult.error.includes('NameError'))) {
+                            outputLines.push({ type: 'warning', content: '💡 Hint: It looks like you are writing Python code. Switch the language selector to "Python".' });
+                        }
+                        setOutput(outputLines);
+                    } else {
+                        setOutput([
+                            { type: 'info', content: '> Code Executed:' },
+                            { type: 'success', content: runResult.actual || 'No output' }
+                        ]);
+                    }
+                } else {
+                    setOutput([{ type: 'info', content: 'No output' }]);
+                }
+            } else {
+                setOutput([{ type: 'error', content: `Execution Failed: ${data.detail || data.error || 'Unknown Error'}` }]);
             }
-        }, 1000);
+        } catch (err) {
+            setOutput([{ type: 'error', content: `Error: ${err.message}` }]);
+        }
     };
 
     const handleSettingsChange = (newSettings) => {
@@ -250,9 +321,7 @@ const CodeEditor = () => {
         try {
             await navigator.clipboard.writeText(code);
             alert("Code copied to clipboard!");
-        } catch (err) {
-            console.error("Failed to copy", err);
-        }
+        } catch (err) { console.error("Failed to copy", err); }
     };
 
     const handleDownloadCode = () => {
@@ -270,36 +339,21 @@ const CodeEditor = () => {
         alert("Snapshot saved!");
     };
 
-    // eslint-disable-next-line no-unused-vars
-    const handleRestoreSnapshot = (snapCode) => {
-        if (window.confirm("Restore this snapshot? Current code will be overwritten.")) {
-            setCode(snapCode);
-        }
-    };
-
-    // Render Snapshots Modal/List (Basic implementation for now to use the function)
     useEffect(() => {
-        if (snapshots.length > 5) setSnapshots(prev => prev.slice(0, 5)); // Keep only last 5
+        if (snapshots.length > 5) setSnapshots(prev => prev.slice(0, 5));
     }, [snapshots]);
 
-    const handleGoogleMeet = () => {
-        window.open('https://meet.google.com/new', '_blank');
-    };
+    const handleGoogleMeet = () => window.open('https://meet.google.com/new', '_blank');
 
     const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null) => {
         if (aiMode && type === 'TEXT') {
-            // Send to AI
             setMessages(prev => [...prev, { id: Date.now(), userId: 'Me', content: text, type: 'TEXT' }]);
             handleAskAI(text);
         } else {
-            // Updated to use REST API instead of Socket
             try {
-                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`, {
+                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         userId: user?.username || 'Guest',
                         content: text,
@@ -311,74 +365,90 @@ const CodeEditor = () => {
 
                 if (res.ok) {
                     const newMsg = await res.json();
-                    // Optimistic update not strictly needed if polling is fast, but better UX
                     setMessages(prev => [...prev, newMsg]);
                 }
-            } catch (err) {
-                console.error("Failed to send message", err);
-            }
+            } catch (err) { console.error("Failed to send message", err); }
         }
     };
 
     const handleAskAI = async (prompt) => {
         try {
             setMessages(prev => [...prev, { id: Date.now() + 1, userId: 'AI (Thinking...)', content: 'Thinking...', type: 'AI_PENDING' }]);
-
             const res = await fetch(`${config.BACKEND_URL}/api/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt, context: code })
             });
+            if (!res.ok) throw new Error(`Server Error: ${res.status}`);
             const data = await res.json();
-
-            // Remove pending and add real response
             setMessages(prev => prev.filter(m => m.type !== 'AI_PENDING'));
             const aiResponse = typeof data.response === 'object' ? JSON.stringify(data.response) : String(data.response || '');
             setMessages(prev => [...prev, { id: Date.now() + 2, userId: 'Gemini AI', content: aiResponse, type: 'AI_RESPONSE' }]);
         } catch (err) {
-            console.error(err);
+            setMessages(prev => prev.filter(m => m.type !== 'AI_PENDING'));
+            setMessages(prev => [...prev, { id: Date.now() + 3, userId: 'System', content: `Error: ${err.message}`, type: 'TEXT' }]);
         }
     };
 
     const handleAIExplain = async () => {
-        // Get selected code or full code
         const model = editorRef.current.getModel();
         const selection = editorRef.current.getSelection();
         const selectedCode = model.getValueInRange(selection) || code;
-
         handleAskAI(`Explain this code:\n${selectedCode}`);
-        setShowChat(true); // Force open chat to see result
+        setShowChat(true);
         setAiMode(true);
     };
 
     const handleTyping = async () => {
         if (!user) return;
-
-        // Clear existing timeout to reset debouncer for "stop typing"
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
-        }
-
-        // Notify backend "I am typing" 
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         try {
-            await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing`, {
+            await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.username, isTyping: true })
             });
-        } catch (err) { console.error(err); }
+        } catch (err) { }
 
-        // Set timeout to send "stop typing"
         typingTimeoutRef.current = setTimeout(async () => {
             try {
-                await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing`, {
+                await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: user.username, isTyping: false })
                 });
-            } catch (err) { console.error(err); }
-        }, 2000); // Stop typing after 2 seconds of inactivity
+            } catch (err) { }
+        }, 2000);
     };
+
+    if (isLocked) {
+        return (
+            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
+                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', maxWidth: '400px', width: '90%' }}>
+                    <FaLock size={50} color="#ef4444" style={{ marginBottom: '1.5rem' }} />
+                    <h2 style={{ marginBottom: '1rem' }}>Private Room</h2>
+                    <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>This room is password protected.</p>
+
+                    <form onSubmit={handleUnlock}>
+                        <input
+                            type="password"
+                            placeholder="Enter password..."
+                            value={passwordInput}
+                            onChange={e => setPasswordInput(e.target.value)}
+                            style={{
+                                width: '100%', padding: '1rem', borderRadius: '12px',
+                                background: 'rgba(255,255,255,0.05)', border: '1px solid #334155',
+                                color: 'white', marginBottom: '1rem', outline: 'none'
+                            }}
+                        />
+                        <button type="submit" className="btn" style={{ width: '100%', padding: '1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px' }}>
+                            Unlock Room
+                        </button>
+                    </form>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#0f172a', color: 'white' }}>
@@ -395,9 +465,7 @@ const CodeEditor = () => {
                             const newLang = e.target.value;
                             setLanguage(newLang);
                             localStorage.setItem(`editor_language_${roomId}`, newLang);
-
-                            // Propagate to backend
-                            fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/language/`, {
+                            authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/language/`, {
                                 method: 'PUT',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ language: newLang })
@@ -438,6 +506,14 @@ const CodeEditor = () => {
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
+                    <button className="btn icon-btn" onClick={() => {
+                        const model = editorRef.current.getModel();
+                        const selection = editorRef.current.getSelection();
+                        const selectedCode = model.getValueInRange(selection) || code;
+                        handleAskAI(`Find bugs and suggest fixes for this code:\n${selectedCode}`);
+                        setShowChat(true);
+                        setAiMode(true);
+                    }} title="Debug with AI" style={{ color: '#ef4444', background: 'transparent', border: 'none' }}><FaRobot /> Debug</button>
 
                     <div style={{ display: 'flex', gap: '5px' }}>
                         <button className="btn" onClick={handleDownloadCode} title="Download File" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaDownload /></button>
@@ -448,35 +524,27 @@ const CodeEditor = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', fontSize: '0.8rem' }}>
                         <span style={{ color: '#94a3b8' }}>Participants: {participants.length}</span>
                     </div>
-                    <div className="avatar-group" style={{ display: 'flex' }}>
-                        {participants.slice(0, 3).map((p, i) => (
-                            <div key={i} style={{ width: '30px', height: '30px', borderRadius: '50%', background: p.color || '#64748b', border: '2px solid #1e293b', marginLeft: '-10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' }}>
-                                {p.name?.[0]?.toUpperCase()}
-                            </div>
-                        ))}
-                    </div>
                 </div>
             </div>
 
-            {/* Main Content (LeetCode Style Grid) */}
+            {/* Main Content */}
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-
-                {/* Left Panel: Instructions / Interview Questions */}
+                {/* Left Panel */}
                 <motion.div
                     initial={{ width: 350, opacity: 1 }}
                     animate={{ width: showInterview ? 350 : 0, opacity: showInterview ? 1 : 0 }}
                     style={{ borderRight: '1px solid #334155', display: showInterview ? 'block' : 'none', background: '#1e293b' }}
                 >
                     <MemoizedInterviewPanel
-                        socket={socket}
+                        socket={null}
                         roomId={roomId}
                         onPostQuestion={(text) => setCode(prev => text + prev)}
+                        initialQuestionId={initialQuestionId}
                     />
                 </motion.div>
 
-                {/* Center Panel: Code Editor */}
+                {/* Center Panel */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                    {/* Interviewer Banner */}
                     {userRole === 'INTERVIEWER' && (
                         <div style={{ background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
                             🎯 INTERVIEWER MODE - Read-Only View
@@ -503,15 +571,13 @@ const CodeEditor = () => {
                         }}
                     />
 
-                    {/* Output Panel Overlay */}
                     <MemoizedOutputPanel
                         isOpen={output.length > 0}
                         output={output}
                         onClose={() => setOutput([])}
-                        isRunning={false} // simplistic
+                        isRunning={false}
                     />
 
-                    {/* Settings Modal */}
                     <SettingsModal
                         isOpen={showSettings}
                         onClose={() => setShowSettings(false)}
@@ -520,7 +586,7 @@ const CodeEditor = () => {
                     />
                 </div>
 
-                {/* Right Panel: Chat / AI */}
+                {/* Right Panel */}
                 <motion.div
                     initial={{ width: 320, opacity: 1 }}
                     animate={{ width: showChat ? 320 : 0, opacity: showChat ? 1 : 0 }}
@@ -529,34 +595,26 @@ const CodeEditor = () => {
                     <div style={{ padding: '10px', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontWeight: 'bold' }}>Chat & AI</span>
                         <div style={{ display: 'flex', gap: '5px' }}>
-                            <button
-                                onClick={() => setAiMode(!aiMode)}
-                                style={{
-                                    fontSize: '0.7rem', padding: '4px 8px', borderRadius: '12px',
-                                    background: aiMode ? 'linear-gradient(45deg, #8b5cf6, #ec4899)' : 'rgba(255,255,255,0.1)',
-                                    border: 'none', color: 'white', cursor: 'pointer'
-                                }}
-                            >
-                                {aiMode ? 'AI ON 🤖' : 'AI OFF'}
-                            </button>
+                            <button onClick={() => setAiMode(!aiMode)} style={{ fontSize: '0.7rem', padding: '4px 8px', borderRadius: '12px', background: aiMode ? 'linear-gradient(45deg, #8b5cf6, #ec4899)' : 'rgba(255,255,255,0.1)', border: 'none', color: 'white', cursor: 'pointer' }}>{aiMode ? 'AI ON 🤖' : 'AI OFF'}</button>
                             <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', color: 'white' }}><FaShareAlt /></button>
                         </div>
                     </div>
                     <div style={{ height: 'calc(100% - 50px)' }}>
                         <MemoizedChatPanel
-                            socket={socket}
+                            socket={null}
                             roomId={roomId}
                             messages={messages}
                             onSendMessage={handleSendMessage}
                             isOpen={true}
                             currentTypingUsers={currentTypingUsers}
                             onTyping={handleTyping}
+                            aiMode={aiMode}
+                            setAiMode={setAiMode}
                         />
                     </div>
                 </motion.div>
             </div>
 
-            {/* Toggle Buttons (Floating or Footer) */}
             <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '10px', zIndex: 100 }}>
                 {!showInterview && <button onClick={() => setShowInterview(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaShareAlt /></button>}
                 {!showChat && <button onClick={() => setShowChat(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaShareAlt style={{ transform: 'scaleX(-1)' }} /></button>}

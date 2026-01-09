@@ -16,18 +16,13 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
+const Problems = lazy(() => import('./pages/Problems'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Quizzes = lazy(() => import('./pages/Quizzes'));
+const QuizPlayer = lazy(() => import('./pages/QuizPlayer'));
 
 function App() {
-  // Suppress benign Monaco Editor errors
-  useEffect(() => {
-    const handleRejection = (event) => {
-      if (event.reason && (event.reason.type === 'cancelation' || event.reason.msg === 'operation is manually canceled')) {
-        event.preventDefault();
-      }
-    };
-    window.addEventListener('unhandledrejection', handleRejection);
-    return () => window.removeEventListener('unhandledrejection', handleRejection);
-  }, []);
+
 
   return (
     <div className="App">
@@ -46,6 +41,26 @@ function App() {
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
                       <Dashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/problems" element={
+                    <ProtectedRoute>
+                      <Problems />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/quizzes" element={
+                    <ProtectedRoute>
+                      <Quizzes />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/quizzes/:id" element={
+                    <ProtectedRoute>
+                      <QuizPlayer />
                     </ProtectedRoute>
                   } />
                   <Route path="/room/:roomId" element={<Editor />} />

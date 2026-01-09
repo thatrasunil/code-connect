@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Room, Message, RoomHistory
+from .models import User, Room, Message, RoomHistory, Quiz, QuizQuestion, QuizResult, Question, TestCase, Submission
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -46,4 +46,43 @@ class RoomHistorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RoomHistory
+        fields = '__all__'
+
+class QuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = '__all__'
+
+class TestCaseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TestCase
+        fields = '__all__'
+
+class SubmissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Submission
+        fields = '__all__'
+
+class QuizQuestionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizQuestion
+        fields = ['id', 'text', 'options'] # Exclude correct_answer for client side
+
+class QuizSerializer(serializers.ModelSerializer):
+    questions_count = serializers.IntegerField(source='questions.count', read_only=True)
+
+    class Meta:
+        model = Quiz
+        fields = '__all__'
+
+class QuizDetailSerializer(serializers.ModelSerializer):
+    questions = QuizQuestionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Quiz
+        fields = '__all__'
+
+class QuizResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuizResult
         fields = '__all__'

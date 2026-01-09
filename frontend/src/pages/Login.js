@@ -2,13 +2,26 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion } from 'framer-motion';
-import { FaUser, FaLock } from 'react-icons/fa';
+import { FaUser, FaLock, FaGoogle } from 'react-icons/fa';
 
 const Login = () => {
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
+    const { login, loginWithGoogle } = useAuth();
     const navigate = useNavigate();
+
+    const handleGoogleSignIn = async () => {
+        setIsLoading(true);
+        setError('');
+        const result = await loginWithGoogle();
+        if (result.success) {
+            navigate('/dashboard');
+        } else {
+            setError(result.error);
+        }
+        setIsLoading(false);
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -156,6 +169,41 @@ const Login = () => {
                         Sign In
                     </motion.button>
                 </form>
+
+                {/* Divider */}
+                <div style={{ display: 'flex', alignItems: 'center', margin: '1.5rem 0' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
+                    <span style={{ padding: '0 1rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>or continue with</span>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }} />
+                </div>
+
+                {/* Google Sign-In Button */}
+                <motion.button
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    style={{
+                        width: '100%',
+                        padding: '0.875rem 1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.75rem',
+                        background: 'white',
+                        color: '#1f2937',
+                        fontSize: '0.95rem',
+                        fontWeight: '600',
+                        borderRadius: '12px',
+                        border: 'none',
+                        cursor: isLoading ? 'not-allowed' : 'pointer',
+                        opacity: isLoading ? 0.7 : 1,
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    <FaGoogle style={{ fontSize: '1.1rem', color: '#EA4335' }} />
+                    {isLoading ? 'Signing in...' : 'Continue with Google'}
+                </motion.button>
 
                 <div style={{ marginTop: '2rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                     Don't have an account?{' '}

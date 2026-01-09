@@ -44,29 +44,21 @@ function Landing() {
   ];
 
   return (
-    <div className="landing-page" style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      background: 'radial-gradient(circle at 50% 10%, #1e293b 0%, #0f172a 100%)',
-      position: 'relative',
-      overflowX: 'hidden'
-    }}>
+    <div className="landing-page">
       {/* Dynamic Background Accents */}
       <motion.div animate={{ rotate: 360 }} transition={{ duration: 100, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '-10%', left: '-10%', width: '500px', height: '500px', background: 'var(--accent-primary)', opacity: 0.08, filter: 'blur(100px)', borderRadius: '50%', zIndex: 0 }} />
       <motion.div animate={{ rotate: -360 }} transition={{ duration: 120, repeat: Infinity, ease: "linear" }} style={{ position: 'absolute', top: '20%', right: '-5%', width: '400px', height: '400px', background: 'var(--accent-secondary)', opacity: 0.08, filter: 'blur(100px)', borderRadius: '50%', zIndex: 0 }} />
 
-      <main className="landing-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6rem 2rem', maxWidth: '1400px', margin: '0 auto', width: '100%', zIndex: 1, position: 'relative' }}>
+      <main className="landing-main">
 
         {/* Hero Section */}
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '4rem', width: '100%', flexWrap: 'wrap', marginBottom: '8rem' }}>
+        <div className="hero-section">
 
           <motion.div
             className="hero-text"
             initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
-            style={{ flex: 1.2, textAlign: 'left', minWidth: '350px' }}
           >
             <div className="hero-badge" style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
@@ -77,17 +69,17 @@ function Landing() {
               Real-time collaboration
             </div>
 
-            <h1 className="main-title" style={{ fontSize: 'clamp(3rem, 5vw, 5rem)', lineHeight: '1.1', fontWeight: '800', marginBottom: '1.5rem', letterSpacing: '-0.03em', fontFamily: '"Inter", sans-serif' }}>
-              <span style={{ background: 'linear-gradient(to right, #a78bfa, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Code together in</span>
+            <h1 className="main-title" style={{ fontSize: 'clamp(2.5rem, 5vw, 5rem)', lineHeight: '1.1', fontWeight: '800', marginBottom: '1.5rem', letterSpacing: '-0.03em', fontFamily: '"Inter", sans-serif' }}>
+              <span style={{ background: 'linear-gradient(to right, #a78bfa, #3b82f6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Code together</span>
               <br />
-              <span style={{ color: '#3b82f6', background: 'linear-gradient(to right, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>perfect sync.</span>
+              <span style={{ color: '#3b82f6', background: 'linear-gradient(to right, #3b82f6, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>in perfect sync.</span>
             </h1>
 
             <p className="subtitle" style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '600px', marginBottom: '3rem', lineHeight: '1.7' }}>
               Spin up an interview-ready coding room, share a link, and watch every keystroke live. No setup required.
             </p>
 
-            <div className="action-buttons" style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="action-buttons">
               <motion.button
                 onClick={createRoom}
                 className="btn"
@@ -109,7 +101,7 @@ function Landing() {
                 <FaPlus size={14} /> Start Coding Now
               </motion.button>
 
-              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(15, 23, 42, 0.6)', padding: '6px', borderRadius: '12px', border: '1px solid #334155', backdropFilter: 'blur(10px)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(30, 41, 59, 0.8)', padding: '6px', borderRadius: '12px', border: '1px solid #475569', backdropFilter: 'blur(10px)' }}>
                 <input
                   type="text"
                   placeholder="Enter Room ID"
@@ -120,9 +112,9 @@ function Landing() {
                 />
                 <button
                   onClick={joinRoom}
-                  style={{ background: '#334155', border: 'none', color: 'white', padding: '0.6rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'background 0.2s' }}
-                  onMouseOver={(e) => e.target.style.background = '#475569'}
-                  onMouseOut={(e) => e.target.style.background = '#334155'}
+                  style={{ background: '#3b82f6', border: 'none', color: 'white', padding: '0.6rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', transition: 'background 0.2s' }}
+                  onMouseOver={(e) => e.target.style.background = '#2563eb'}
+                  onMouseOut={(e) => e.target.style.background = '#3b82f6'}
                 >
                   Join
                 </button>
@@ -136,15 +128,25 @@ function Landing() {
             initial={{ opacity: 0, x: 30, rotateY: 10 }}
             animate={{ opacity: 1, x: 0, rotateY: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
-            style={{ flex: 1, minWidth: '350px', position: 'relative', perspective: '1000px' }}
           >
             <div style={{
-              background: '#0f172a', borderRadius: '16px', border: '1px solid #334155',
-              boxShadow: '0 50px 100px -20px rgba(0, 0, 0, 0.7)', overflow: 'hidden',
-              transform: 'rotateY(-5deg) rotateX(2deg)', transition: 'transform 0.3s ease'
+              background: '#0f172a',
+              borderRadius: '16px',
+              border: '2px solid rgba(99, 102, 241, 0.5)',
+              boxShadow: '0 0 40px rgba(99, 102, 241, 0.3), 0 0 80px rgba(6, 182, 212, 0.2), 0 50px 100px -20px rgba(0, 0, 0, 0.7)',
+              overflow: 'hidden',
+              transform: 'rotateY(-5deg) rotateX(2deg)',
+              transition: 'all 0.3s ease',
+              animation: 'glow-pulse 3s ease-in-out infinite'
             }}
-              onMouseMove={(e) => { e.currentTarget.style.transform = 'rotateY(0deg) rotateX(0deg) scale(1.02)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'rotateY(-5deg) rotateX(2deg)'; }}
+              onMouseMove={(e) => {
+                e.currentTarget.style.transform = 'rotateY(0deg) rotateX(0deg) scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 0 60px rgba(99, 102, 241, 0.5), 0 0 100px rgba(6, 182, 212, 0.3), 0 50px 100px -20px rgba(0, 0, 0, 0.7)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'rotateY(-5deg) rotateX(2deg)';
+                e.currentTarget.style.boxShadow = '0 0 40px rgba(99, 102, 241, 0.3), 0 0 80px rgba(6, 182, 212, 0.2), 0 50px 100px -20px rgba(0, 0, 0, 0.7)';
+              }}
             >
               {/* Window Bar */}
               <div style={{ background: '#1e293b', padding: '12px 16px', display: 'flex', gap: '8px', alignItems: 'center', borderBottom: '1px solid #334155' }}>
@@ -175,7 +177,7 @@ function Landing() {
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              style={{ position: 'absolute', bottom: '-20px', right: '-20px', background: 'rgba(30, 41, 59, 0.8)', padding: '10px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: '10px' }}
+              style={{ position: 'absolute', bottom: '-20px', right: '0px', background: 'rgba(30, 41, 59, 0.8)', padding: '10px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', gap: '10px' }}
             >
               <div style={{ width: '10px', height: '10px', background: '#4ade80', borderRadius: '50%', boxShadow: '0 0 10px #4ade80' }}></div>
               <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>Live Connection</span>
@@ -233,6 +235,55 @@ function Landing() {
         </div>
 
 
+
+
+        {/* Features Section */}
+        <div className="features-section" style={{ width: '100%', maxWidth: '1200px', marginBottom: '8rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem' }}>Everything you need</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Powerful tools for interviews, education, and pair programming.</p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+            {[
+              { title: "AI Assistant", icon: <FaMicrophone />, color: "#8b5cf6", desc: "Get real-time code explanations, debugging help, and suggestions from Gemini AI." },
+              { title: "Mock Interviews", icon: <FaComments />, color: "#ec4899", desc: "Dedicated roles for interviewers and candidates with private notes and question banks." },
+              { title: "Live Quizzes", icon: <FaArrowRight />, color: "#eab308", desc: "Test your knowledge with interactive coding quizzes and compete on global leaderboards." },
+              { title: "Private Rooms", icon: <FaLock />, color: "#ef4444", desc: "Secure your sessions with password protection for sensitive code reviews or interviews." },
+              { title: "Multi-Language", icon: <FaGlobe />, color: "#06b6d4", desc: "Support for JavaScript, Python, Java, C++, and more with intelligent syntax highlighting." },
+              { title: "Video Chat", icon: <FaMicrophone />, color: "#22c55e", desc: "Built-in video and voice chat integration via Google Meet for seamless communication." }
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                whileHover={{ y: -5, background: 'rgba(30, 41, 59, 0.6)' }}
+                viewport={{ once: true }}
+                style={{
+                  padding: '2rem',
+                  borderRadius: '20px',
+                  background: 'rgba(30, 41, 59, 0.3)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}
+              >
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '12px',
+                  background: `rgba(${parseInt(feature.color.slice(1, 3), 16)}, ${parseInt(feature.color.slice(3, 5), 16)}, ${parseInt(feature.color.slice(5, 7), 16)}, 0.2)`,
+                  color: feature.color,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.25rem'
+                }}>
+                  {feature.icon}
+                </div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{feature.title}</h3>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '0.95rem' }}>{feature.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
 
         {/* FAQ Section */}
         <div style={{ width: '100%', maxWidth: '800px', marginBottom: '6rem' }}>
