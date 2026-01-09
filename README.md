@@ -25,6 +25,7 @@ A **Real-Time Collaborative Coding Interview Platform** with integrated AI assis
 - **Real-time Chat**: Text messaging with file sharing and voice notes
 - **Typing Indicators**: See when collaborators are actively typing
 - **Video Conferencing**: Integrated Google Meet support
+- **Google Drive Export**: Export code directly to Google Drive for cloud storage
 - **Problem Library**: LeetCode-style interview questions with timer
 
 ### 🎨 User Experience
@@ -170,6 +171,7 @@ const config = {
 ### Google Services Integration
 - **Google Gemini AI** - AI-powered code explanation and intelligent chat assistance
 - **Google Meet** - Integrated video conferencing for remote pair programming
+- **Google Drive** - Code export functionality for cloud storage
 - **Google Fonts** - Modern typography (Inter, Roboto, Outfit)
 
 ### Development & Testing
@@ -237,6 +239,7 @@ This project is licensed under the ISC License.
 
 - **Google Gemini AI** for intelligent code assistance and explanations
 - **Google Meet** for seamless video conferencing integration
+- **Google Drive** for cloud storage and code export functionality
 - **Monaco Editor** by Microsoft for the powerful code editor
 - React community for excellent tools and libraries
 - Framer Motion for beautiful animations
