@@ -233,7 +233,7 @@ This project is licensed under the ISC License.
 
 ## 👨‍💻 Author
 
-**Sunil Rathore**
+**Sunil**
 - GitHub: [@thatrasunil](https://github.com/thatrasunil)
 
 ## 🙏 Acknowledgments
@@ -249,4 +249,4 @@ For support, please open an issue in the GitHub repository.
 
 ---
 
-**Made with ❤️ by Sunil Rathore**
+**Made with ❤️ by Sunil**
