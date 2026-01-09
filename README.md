@@ -149,29 +149,38 @@ const config = {
 
 ## 📚 Tech Stack
 
-### Frontend
-- **React** 18.2.0 - UI framework
-- **React Router** 6.x - Navigation
-- **Monaco Editor** 4.7.0 - Code editor (VS Code engine)
-- **Framer Motion** 12.x - Smooth animations
-- **React Icons** 5.x - Icon library
+### Frontend Technologies
+- **React** 18.2.0 - UI framework with hooks and functional components
+- **React Router DOM** 7.9.2 - Client-side routing and navigation
+- **Monaco Editor** 4.7.0 - VS Code's powerful code editor engine
+- **Framer Motion** 12.24.12 - Smooth animations and transitions
+- **React Icons** 5.5.0 - Comprehensive icon library
+- **Socket.IO Client** 4.8.3 - Real-time bidirectional communication
+- **JWT Decode** 4.0.0 - JSON Web Token decoding for authentication
+- **React Scripts** 5.0.1 - Create React App build tooling
+- **Web Vitals** 2.1.4 - Performance metrics tracking
 
-### Backend
-- **Django** 5.x - Web framework
-- **Django REST Framework** - API development
-- **Django CORS Headers** - CORS handling
-- **Google Generative AI** - Gemini AI integration
+### Backend Technologies
+- **Django** 5.x - High-level Python web framework
+- **Django REST Framework** - Powerful toolkit for building Web APIs
+- **Django CORS Headers** - Cross-Origin Resource Sharing handling
+- **Python** 3.11+ - Core programming language
+- **Google Generative AI** (google-generativeai) - Gemini AI SDK for Python
 
-### Google Services
-- **Google Gemini AI** - AI-powered code explanation and chat assistance
-- **Google Meet** - Integrated video conferencing for remote interviews
-- **Google Fonts** - Typography (Inter, Roboto, etc.)
+### Google Services Integration
+- **Google Gemini AI** - AI-powered code explanation and intelligent chat assistance
+- **Google Meet** - Integrated video conferencing for remote pair programming
+- **Google Fonts** - Modern typography (Inter, Roboto, Outfit)
+
+### Development & Testing
+- **Testing Library** (@testing-library/react, jest-dom, user-event) - Component testing
+- **ESLint** - Code quality and style enforcement
+- **React App Testing** - Built-in Jest configuration
 
 ### Performance Optimizations
 - **Code Splitting**: Route-based lazy loading with React.lazy
 - **React.memo**: Optimized re-renders for Chat, Interview, and Output panels
 - **Auto-save**: Debounced localStorage backup every 5 seconds
-- **Lazy Loading**: Asynchronous problem library loading
 
 ## 🎮 Usage
 
