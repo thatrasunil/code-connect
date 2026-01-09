@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Editor, { useMonaco } from '@monaco-editor/react';
-// import io from 'socket.io-client';
+import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaShareAlt, FaRobot, FaDownload, FaCopy, FaHistory } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+
 import { useAuth } from '../contexts/AuthContext';
 import ChatPanel from './ChatPanel';
 import InterviewPanel from './InterviewPanel';
 import OutputPanel from './OutputPanel';
+import SettingsModal from './SettingsModal';
 import config from '../config';
+import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '../constants';
 
 // Memoize sub-components to prevent re-renders on every keystroke
 const MemoizedInterviewPanel = React.memo(InterviewPanel);
 const MemoizedChatPanel = React.memo(ChatPanel);
 const MemoizedOutputPanel = React.memo(OutputPanel);
-import { FaPlay, FaVideo, FaGoogleDrive, FaCog, FaShareAlt, FaRobot } from 'react-icons/fa';
-import { motion } from 'framer-motion';
 
 const CodeEditor = () => {
     const { roomId } = useParams();
@@ -23,11 +25,21 @@ const CodeEditor = () => {
 
     // State
     const [code, setCode] = useState('// Write your code here...');
-    const [language, setLanguage] = useState('javascript');
-    const [theme, setTheme] = useState('vs-dark');
+    const [language, setLanguage] = useState(() => localStorage.getItem(`editor_language_${roomId}`) || 'javascript');
+    const [theme, setTheme] = useState(() => localStorage.getItem(`editor_theme_${roomId}`) || 'vs-dark');
+    const [editorSettings, setEditorSettings] = useState(() => {
+        const saved = localStorage.getItem(`editor_settings_${roomId}`);
+        return saved ? JSON.parse(saved) : DEFAULT_EDITOR_SETTINGS;
+    });
+
+    const [showSettings, setShowSettings] = useState(false);
+    const [snapshots, setSnapshots] = useState([]); // Simplified history for now
     const [output, setOutput] = useState([]);
     const [isSaving, setIsSaving] = useState(false);
     const lastSavedCodeRef = useRef(code);
+    const lastFetchedCodeRef = useRef('');
+    const lastTypeTimeRef = useRef(0); // To prevent overwriting while user is typing
+    const isTypingRef = useRef(false); // Ref for immediate access in intervals
 
     // Panels
     const [showChat, setShowChat] = useState(true);
@@ -38,6 +50,8 @@ const CodeEditor = () => {
     const [participants, setParticipants] = useState([]);
     const [messages, setMessages] = useState([]);
     const [currentTypingUsers, setCurrentTypingUsers] = useState([]);
+    const [userRole, setUserRole] = useState('CANDIDATE');
+    const [permissions, setPermissions] = useState({ canEdit: true, canView: true, canEvaluate: false });
     const typingTimeoutRef = useRef(null);
 
     const editorRef = useRef(null);
@@ -56,6 +70,24 @@ const CodeEditor = () => {
         }
     }, [roomId]);
 
+    // Fetch user permissions
+    useEffect(() => {
+        const fetchPermissions = async () => {
+            try {
+                const userId = user?.username || 'Guest';
+                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/permissions?userId=${userId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setUserRole(data.role);
+                    setPermissions(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch permissions", err);
+            }
+        };
+        fetchPermissions();
+    }, [roomId, user]);
+
     // Polling for Messages and Typing Status
     // Polling for Messages and Typing Status
     useEffect(() => {
@@ -64,15 +96,20 @@ const CodeEditor = () => {
                 const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (Array.isArray(data)) {
-                        setMessages(data);
-                    } else {
-                        setMessages([]);
-                    }
+                    if (Array.isArray(data)) setMessages(data);
+                    else setMessages([]);
                 }
-            } catch (err) {
-                console.error("Failed to fetch messages", err);
-            }
+            } catch (err) { console.error("Failed to fetch messages", err); }
+        };
+
+        const fetchParticipants = async () => {
+            try {
+                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/participants`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setParticipants(data);
+                }
+            } catch (err) { console.error("Failed to fetch participants", err); }
         };
 
         const fetchTypingUsers = async () => {
@@ -83,18 +120,66 @@ const CodeEditor = () => {
                     const myUserId = user?.username || 'Guest';
                     setCurrentTypingUsers(users.filter(u => u !== myUserId));
                 }
-            } catch (err) {
-                console.error("Failed to fetch typing users", err);
-            }
+            } catch (err) { console.error("Failed to fetch typing users", err); }
         };
 
+        const sendHeartbeat = async () => {
+            try {
+                await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/heartbeat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: user?.username || 'Guest',
+                        username: user?.username || 'Guest'
+                    })
+                });
+            } catch (err) { console.error("Heartbeat failed", err); }
+        };
+
+        const fetchRoomData = async () => {
+            // Only fetch code if user hasn't typed in last 2 seconds
+            if (Date.now() - lastTypeTimeRef.current < 2000) return;
+
+            try {
+                // Fetch Code
+                const resCode = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/code/`);
+                if (resCode.ok) {
+                    const data = await resCode.json();
+                    // Only update if content is different and we are not currently saving
+                    if (data.content !== lastSavedCodeRef.current && data.content !== code) {
+                        // Simple check: In a real app, use operational transformation or CRDTs. 
+                        // Here we assume last-write-wins but careful not to overwrite active typing.
+                        setCode(data.content);
+                        lastSavedCodeRef.current = data.content;
+                    }
+                }
+
+                // Fetch Language
+                const resLang = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/metadata/`);
+                if (resLang.ok) {
+                    const data = await resLang.json();
+                    if (data.language && data.language !== language) {
+                        setLanguage(data.language);
+                        localStorage.setItem(`editor_language_${roomId}`, data.language);
+                    }
+                }
+            } catch (err) { console.error("Failed to fetch room data", err); }
+        };
+
+        // Initial calls
         fetchMessages();
+        fetchParticipants();
         fetchTypingUsers();
+        sendHeartbeat();
+        fetchRoomData();
 
         const interval = setInterval(() => {
             fetchMessages();
+            fetchParticipants();
             fetchTypingUsers();
-        }, 3000);
+            sendHeartbeat();
+            fetchRoomData();
+        }, 3000); // Poll every 3 seconds
 
         return () => clearInterval(interval);
     }, [roomId, user]);
@@ -104,26 +189,37 @@ const CodeEditor = () => {
         const interval = setInterval(async () => {
             if (editorRef.current) {
                 const currentCode = editorRef.current.getValue();
+
+                // Only save if changed
                 if (currentCode !== lastSavedCodeRef.current) {
                     setIsSaving(true);
-
-                    // 1. Save to Local Storage
                     localStorage.setItem(`code_backup_${roomId}`, currentCode);
 
-                    // 2. Save to Backend (Placeholder)
-
-                    lastSavedCodeRef.current = currentCode;
-                    setTimeout(() => setIsSaving(false), 800);
+                    try {
+                        await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/code/`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                            },
+                            body: JSON.stringify({ content: currentCode })
+                        });
+                        lastSavedCodeRef.current = currentCode;
+                    } catch (err) {
+                        console.error("Failed to save code", err);
+                    } finally {
+                        setTimeout(() => setIsSaving(false), 800);
+                    }
                 }
             }
-        }, 5000);
+        }, 2000); // Check for save every 2 seconds
         return () => clearInterval(interval);
-    }, [roomId]);
+    }, [roomId, token]);
 
     // Handlers
     const handleEditorChange = (value) => {
         setCode(value);
-        // Instant local backup
+        lastTypeTimeRef.current = Date.now(); // Mark user as active typing
         localStorage.setItem(`code_backup_${roomId}`, value);
     };
 
@@ -145,19 +241,49 @@ const CodeEditor = () => {
         }, 1000);
     };
 
-    const handleGoogleMeet = () => {
-        window.open('https://meet.google.com/new', '_blank');
+    const handleSettingsChange = (newSettings) => {
+        setEditorSettings(newSettings);
+        localStorage.setItem(`editor_settings_${roomId}`, JSON.stringify(newSettings));
     };
 
-    const handleGoogleDriveExport = () => {
-        // Simulating export
+    const handleCopyCode = async () => {
+        try {
+            await navigator.clipboard.writeText(code);
+            alert("Code copied to clipboard!");
+        } catch (err) {
+            console.error("Failed to copy", err);
+        }
+    };
+
+    const handleDownloadCode = () => {
         const blob = new Blob([code], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `code_${roomId}.txt`; // or .js
+        a.download = `code_${roomId}.${language === 'javascript' ? 'js' : language === 'python' ? 'py' : 'txt'}`;
         a.click();
-        alert("Code downloaded! (Ready for Drive Upload)");
+    };
+
+    const handleSaveSnapshot = () => {
+        const snap = { id: Date.now(), code, timestamp: new Date().toLocaleString() };
+        setSnapshots(prev => [snap, ...prev]);
+        alert("Snapshot saved!");
+    };
+
+    // eslint-disable-next-line no-unused-vars
+    const handleRestoreSnapshot = (snapCode) => {
+        if (window.confirm("Restore this snapshot? Current code will be overwritten.")) {
+            setCode(snapCode);
+        }
+    };
+
+    // Render Snapshots Modal/List (Basic implementation for now to use the function)
+    useEffect(() => {
+        if (snapshots.length > 5) setSnapshots(prev => prev.slice(0, 5)); // Keep only last 5
+    }, [snapshots]);
+
+    const handleGoogleMeet = () => {
+        window.open('https://meet.google.com/new', '_blank');
     };
 
     const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null) => {
@@ -261,8 +387,50 @@ const CodeEditor = () => {
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <div className="logo" style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>CodeConnect</div>
                     <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
+
+                    {/* Language Selector */}
+                    <select
+                        value={language}
+                        onChange={(e) => {
+                            const newLang = e.target.value;
+                            setLanguage(newLang);
+                            localStorage.setItem(`editor_language_${roomId}`, newLang);
+
+                            // Propagate to backend
+                            fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/language/`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ language: newLang })
+                            }).catch(err => console.error(err));
+                        }}
+                        style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                    >
+                        {SUPPORTED_LANGUAGES.map(lang => (
+                            <option key={lang.id} value={lang.id}>{lang.name}</option>
+                        ))}
+                    </select>
+
+                    {/* Theme Selector */}
+                    <select
+                        value={theme}
+                        onChange={(e) => {
+                            const newTheme = e.target.value;
+                            setTheme(newTheme);
+                            localStorage.setItem(`editor_theme_${roomId}`, newTheme);
+                        }}
+                        style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
+                    >
+                        {SUPPORTED_THEMES.map(theme => (
+                            <option key={theme.id} value={theme.id}>{theme.name}</option>
+                        ))}
+                    </select>
+
+                    <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
+
                     <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleRunCode}><FaPlay color="#10b981" /> Run</button>
                     <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={handleGoogleMeet} title="Start Google Meet"><FaVideo /> Meet</button>
+                    <button className="btn" style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: '1px solid #475569' }} onClick={() => setShowSettings(true)} title="Settings"><FaCog /></button>
+
                     <div style={{ fontSize: '0.8rem', color: isSaving ? '#facc15' : '#94a3b8', fontStyle: 'italic', minWidth: '60px' }}>
                         {isSaving ? 'Saving...' : 'Saved'}
                     </div>
@@ -270,7 +438,13 @@ const CodeEditor = () => {
 
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <button className="btn icon-btn" onClick={handleAIExplain} title="Explain with AI" style={{ color: '#8b5cf6', background: 'transparent', border: 'none' }}><FaRobot /> Explain</button>
-                    <button className="btn" onClick={handleGoogleDriveExport} style={{ display: 'flex', gap: '6px', background: 'transparent', color: 'white', border: 'none' }} title="Export to Drive"><FaGoogleDrive /> Export</button>
+
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                        <button className="btn" onClick={handleDownloadCode} title="Download File" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaDownload /></button>
+                        <button className="btn" onClick={handleCopyCode} title="Copy to Clipboard" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaCopy /></button>
+                        <button className="btn" onClick={handleSaveSnapshot} title="Save Snapshot" style={{ background: 'transparent', border: 'none', color: 'white' }}><FaHistory /></button>
+                    </div>
+
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'end', fontSize: '0.8rem' }}>
                         <span style={{ color: '#94a3b8' }}>Participants: {participants.length}</span>
                     </div>
@@ -302,6 +476,13 @@ const CodeEditor = () => {
 
                 {/* Center Panel: Code Editor */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                    {/* Interviewer Banner */}
+                    {userRole === 'INTERVIEWER' && (
+                        <div style={{ background: 'linear-gradient(90deg, #8b5cf6, #ec4899)', padding: '0.75rem', textAlign: 'center', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                            🎯 INTERVIEWER MODE - Read-Only View
+                        </div>
+                    )}
+
                     <Editor
                         height="100%"
                         theme={theme}
@@ -311,9 +492,14 @@ const CodeEditor = () => {
                         onMount={(editor) => { editorRef.current = editor; }}
                         options={{
                             minimap: { enabled: false },
-                            fontSize: 14,
+                            fontSize: editorSettings.fontSize,
+                            wordWrap: editorSettings.wordWrap,
+                            lineNumbers: editorSettings.lineNumbers,
+                            tabSize: editorSettings.tabSize,
                             scrollBeyondLastLine: false,
                             automaticLayout: true,
+                            readOnly: !permissions.canEdit,
+                            domReadOnly: !permissions.canEdit,
                         }}
                     />
 
@@ -323,6 +509,14 @@ const CodeEditor = () => {
                         output={output}
                         onClose={() => setOutput([])}
                         isRunning={false} // simplistic
+                    />
+
+                    {/* Settings Modal */}
+                    <SettingsModal
+                        isOpen={showSettings}
+                        onClose={() => setShowSettings(false)}
+                        settings={editorSettings}
+                        onSettingsChange={handleSettingsChange}
                     />
                 </div>
 

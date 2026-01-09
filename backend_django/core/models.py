@@ -47,3 +47,80 @@ class RoomHistory(models.Model):
 
     class Meta:
         db_table = 'room_history'
+
+class Question(models.Model):
+    id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    title = models.CharField(max_length=200)
+    content = models.TextField() # Description / Problem Statement
+    difficulty = models.CharField(max_length=20, choices=[('Easy', 'Easy'), ('Medium', 'Medium'), ('Hard', 'Hard')])
+    topic = models.CharField(max_length=50, default='Algorithms')
+    input_format = models.TextField(blank=True, default="")
+    output_format = models.TextField(blank=True, default="")
+    constraints = models.TextField(blank=True, default="")
+    example_cases = models.TextField(blank=True, default="") # JSON or string representation
+    
+    class Meta:
+        db_table = 'questions'
+
+class InterviewSession(models.Model):
+    id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    room = models.ForeignKey(Room, related_name='session', on_delete=models.CASCADE)
+    interviewer = models.ForeignKey(User, related_name='conducted_interviews', on_delete=models.SET_NULL, null=True)
+    candidate_name = models.CharField(max_length=100, default='Candidate')
+    notes = models.TextField(blank=True, default="")
+    score = models.IntegerField(default=0) # 0-10 or 0-100
+    status = models.CharField(max_length=20, choices=[('Active', 'Active'), ('Completed', 'Completed')], default='Active')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'interview_sessions'
+
+class TestCase(models.Model):
+    id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    question = models.ForeignKey(Question, related_name='test_cases', on_delete=models.CASCADE)
+    input_data = models.TextField() # JSON string or plain text
+    expected_output = models.TextField()
+    is_hidden = models.BooleanField(default=False) # Hidden test cases for final submission
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'test_cases'
+
+class Submission(models.Model):
+    id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    user = models.ForeignKey(User, related_name='submissions', on_delete=models.CASCADE, null=True)
+    question = models.ForeignKey(Question, related_name='submissions', on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, related_name='submissions', on_delete=models.CASCADE, null=True)
+    code = models.TextField()
+    language = models.CharField(max_length=50, default='javascript')
+    status = models.CharField(max_length=20, choices=[
+        ('Accepted', 'Accepted'),
+        ('Wrong Answer', 'Wrong Answer'),
+        ('Runtime Error', 'Runtime Error'),
+        ('Time Limit Exceeded', 'Time Limit Exceeded')
+    ], default='Accepted')
+    runtime = models.IntegerField(null=True, blank=True) # in milliseconds
+    memory = models.IntegerField(null=True, blank=True) # in KB
+    passed_tests = models.IntegerField(default=0)
+    total_tests = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'submissions'
+
+class RoomParticipant(models.Model):
+    id = models.CharField(max_length=50, primary_key=True, default=uuid.uuid4)
+    room = models.ForeignKey(Room, related_name='participants_roles', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='room_roles', on_delete=models.CASCADE, null=True)
+    user_id_str = models.CharField(max_length=255, blank=True) # For guest users
+    role = models.CharField(max_length=20, choices=[
+        ('INTERVIEWER', 'Interviewer'),
+        ('CANDIDATE', 'Candidate'),
+        ('VIEWER', 'Viewer')
+    ], default='CANDIDATE')
+    joined_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'room_participants'
+        unique_together = ['room', 'user']

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaPlus, FaLaptopCode, FaChartPie, FaHistory, FaProjectDiagram } from 'react-icons/fa';
+import { FaPlus, FaLaptopCode, FaChartPie, FaHistory, FaProjectDiagram, FaTrophy } from 'react-icons/fa';
 
 import config from '../config';
 
@@ -11,6 +11,9 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState({ totalSessions: 0, roomsCreated: 0, languagesUsed: [] });
     const [myRooms, setMyRooms] = useState([]);
+    const [pastInterviews, setPastInterviews] = useState([]);
+    const [leaderboard, setLeaderboard] = useState([]);
+    const [activeTab, setActiveTab] = useState('rooms'); // 'rooms' or 'interviews'
     const [loading, setLoading] = useState(true);
 
     // Dynamic backend URL
@@ -29,6 +32,14 @@ const Dashboard = () => {
                 // Fetch My Rooms
                 const roomsRes = await fetch(`${BACKEND_URL}/api/rooms/my-rooms`, { headers });
                 if (roomsRes.ok) setMyRooms(await roomsRes.json());
+
+                // Fetch Interviews
+                const interviewsRes = await fetch(`${BACKEND_URL}/api/dashboard/interviews`, { headers });
+                if (interviewsRes.ok) setPastInterviews(await interviewsRes.json());
+
+                // Fetch Leaderboard
+                const leaderboardRes = await fetch(`${BACKEND_URL}/api/leaderboard`);
+                if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
 
             } catch (err) {
                 console.error("Dashboard fetch error", err);
@@ -68,56 +79,114 @@ const Dashboard = () => {
                 {/* My Rooms List */}
                 <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <h2 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <FaHistory size={20} style={{ color: 'var(--accent-primary)' }} /> My Recent Rooms
-                        </h2>
+                        <div style={{ display: 'flex', gap: '20px' }}>
+                            <h2
+                                onClick={() => setActiveTab('rooms')}
+                                style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: activeTab === 'rooms' ? 1 : 0.5 }}
+                            >
+                                <FaHistory size={20} style={{ color: 'var(--accent-primary)' }} /> My Recent Rooms
+                            </h2>
+                            <h2
+                                onClick={() => setActiveTab('interviews')}
+                                style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', opacity: activeTab === 'interviews' ? 1 : 0.5 }}
+                            >
+                                <FaLaptopCode size={20} style={{ color: '#10b981' }} /> Interview History
+                            </h2>
+                        </div>
                         <Link to="/" className="btn primary-btn" style={{ padding: '0.5rem 1rem', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <FaPlus /> New Room
                         </Link>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {myRooms.length === 0 ? (
-                            <div className="glass-card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                                No rooms found. Start a new session!
-                            </div>
-                        ) : (
-                            myRooms.map(room => (
-                                <motion.div
-                                    key={room.id}
-                                    className="glass-card"
-                                    whileHover={{ scale: 1.01, borderColor: 'var(--accent-primary)' }}
-                                    style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                                >
-                                    <div>
-                                        <h3 style={{ margin: 0, fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                                            Room #{room.room_id}
-                                            {!room.is_public && <span style={{ marginLeft: '10px', fontSize: '0.7rem', border: '1px solid #ef4444', color: '#ef4444', padding: '2px 6px', borderRadius: '4px' }}>PRIVATE</span>}
-                                        </h3>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                                            {new Date(room.created_at).toLocaleDateString()} • {room.language}
+                        {activeTab === 'rooms' ? (
+                            myRooms.length === 0 ? (
+                                <div className="glass-card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                    No rooms found. Start a new session!
+                                </div>
+                            ) : (
+                                myRooms.map(room => (
+                                    <motion.div
+                                        key={room.id}
+                                        className="glass-card"
+                                        whileHover={{ scale: 1.01, borderColor: 'var(--accent-primary)' }}
+                                        style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                    >
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                                                Room #{room.room_id}
+                                                {!room.is_public && <span style={{ marginLeft: '10px', fontSize: '0.7rem', border: '1px solid #ef4444', color: '#ef4444', padding: '2px 6px', borderRadius: '4px' }}>PRIVATE</span>}
+                                            </h3>
+                                            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                                {new Date(room.created_at).toLocaleDateString()} • {room.language}
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
-                                        <Link to={`/room/${room.room_id}`} className="btn" style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#22d3ee', padding: '0.5rem 1.2rem' }}>
-                                            Open
-                                        </Link>
-                                    </div>
-                                </motion.div>
-                            ))
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <Link to={`/room/${room.room_id}`} className="btn" style={{ background: 'rgba(6, 182, 212, 0.15)', color: '#22d3ee', padding: '0.5rem 1.2rem' }}>
+                                                Open
+                                            </Link>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )
+                        ) : (
+                            pastInterviews.length === 0 ? (
+                                <div className="glass-card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                                    No interviews conducted yet.
+                                </div>
+                            ) : (
+                                pastInterviews.map(session => (
+                                    <motion.div
+                                        key={session.id}
+                                        className="glass-card"
+                                        whileHover={{ scale: 1.01, borderColor: '#10b981' }}
+                                        style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '3px solid #10b981' }}
+                                    >
+                                        <div>
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', marginBottom: '0.5rem' }}>
+                                                Candidate: {session.candidate_name}
+                                            </h3>
+                                            <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                                                {new Date(session.created_at).toLocaleDateString()} • Room #{session.room_id}
+                                            </div>
+                                            <div style={{ marginTop: '5px' }}>
+                                                <span style={{ fontSize: '0.8rem', background: '#334155', padding: '2px 8px', borderRadius: '4px' }}>
+                                                    Score: <span style={{ color: '#10b981', fontWeight: 'bold' }}>{session.score}/100</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <Link to={`/room/${session.room_id}`} className="btn" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '0.5rem 1.2rem' }}>
+                                                View
+                                            </Link>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            )
                         )}
                     </div>
                 </div>
 
-                {/* Quick Actions / Tips */}
+                {/* Leaderboard */}
                 <div>
                     <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-                        <h3 style={{ marginBottom: '1rem' }}>Quick Tips</h3>
-                        <ul style={{ paddingLeft: '1.2rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-                            <li style={{ marginBottom: '0.5rem' }}>Invite others by sharing the URL.</li>
-                            <li style={{ marginBottom: '0.5rem' }}>Use the Chat tab to communicate.</li>
-                            <li>Switch languages using the dropdown.</li>
-                        </ul>
+                        <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <FaTrophy color="#fbbf24" /> Top Coders
+                        </h3>
+                        {leaderboard.length === 0 ? (
+                            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem' }}>No data yet</p>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                {leaderboard.slice(0, 5).map((user, index) => (
+                                    <div key={user.username} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: index === 0 ? '#fbbf24' : index === 1 ? '#94a3b8' : index === 2 ? '#b45309' : '#64748b', minWidth: '25px' }}>#{index + 1}</span>
+                                        <img src={user.avatar} alt={user.username} style={{ width: '30px', height: '30px', borderRadius: '50%', border: '2px solid #3b82f6' }} />
+                                        <span style={{ flex: 1, fontSize: '0.9rem' }}>{user.username}</span>
+                                        <span style={{ fontSize: '0.85rem', color: '#3b82f6', fontWeight: 'bold' }}>{user.points} pts</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

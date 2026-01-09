@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaArrowRight, FaCode, FaGlobe, FaComments, FaShare, FaLock, FaMicrophone } from 'react-icons/fa';
-import PricingCard from './PricingCard';
 import config from '../config';
 
 function Landing() {
@@ -233,34 +232,7 @@ function Landing() {
           </div>
         </div>
 
-        {/* Pricing Section */}
-        <div style={{ width: '100%', maxWidth: '1200px', marginBottom: '8rem' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '1rem' }}>Simple Pricing</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>Choose the plan that fits your needs.</p>
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-            <PricingCard
-              title="Hobby"
-              price="$0"
-              features={['Unlimited Public Rooms', '2 Participants per room', 'Basic Chat', 'JavaScript Engine']}
-            />
-            <PricingCard
-              title="Pro"
-              price="$12"
-              recommmended={true}
-              features={['Unlimited Private Rooms', '10 Participants per room', 'Interview Mode', 'Priority Support']}
-              delay={0.1}
-            />
-            <PricingCard
-              title="Team"
-              price="$49"
-              features={['SSO Authentication', 'Session Recording', 'Admin Dashboard', 'Custom Branding']}
-              delay={0.2}
-            />
-          </div>
-        </div>
 
         {/* FAQ Section */}
         <div style={{ width: '100%', maxWidth: '800px', marginBottom: '6rem' }}>

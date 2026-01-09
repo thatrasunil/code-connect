@@ -1,12 +1,16 @@
+
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     SignupView, CreateRoomView, RoomDetailView, UserProfileView,
     DashboardStatsView, MyRoomsView, FileUploadView,
     RoomMetadataView, RoomLanguageView, RoomCodeView, RootView,
-    AIChatView, AIExplainView, AIInterviewView, RoomMessageView,
-    TypingStatusView, RoomTypingView, LeaderboardView
+    RoomMessageView, TypingStatusView, RoomTypingView, LeaderboardView, HeartbeatView, RoomParticipantsView,
+    AIChatView, AIExplainView, AIInterviewView
 )
+from .views_interview import QuestionListView, InterviewSessionView, InterviewHistoryView
+from .views_execution import ExecuteCodeView, SubmitSolutionView
+from .views_roles import AssignRoleView, RoomPermissionsView, RoomParticipantsRolesView
 
 urlpatterns = [
     path('api/leaderboard', LeaderboardView.as_view(), name='leaderboard'),
@@ -37,4 +41,20 @@ urlpatterns = [
     path('api/rooms/<str:room_id>/messages', RoomMessageView.as_view(), name='room-messages'),
     path('api/rooms/<str:room_id>/typing', TypingStatusView.as_view(), name='room-typing-status'),
     path('api/rooms/<str:room_id>/typing/active', RoomTypingView.as_view(), name='room-typing-active'),
+    path('api/rooms/<str:room_id>/heartbeat', HeartbeatView.as_view(), name='room-heartbeat'),
+    path('api/rooms/<str:room_id>/participants', RoomParticipantsView.as_view(), name='room-participants'),
+    
+    # Interview Features
+    path('api/questions', QuestionListView.as_view(), name='question-list'),
+    path('api/rooms/<str:room_id>/session', InterviewSessionView.as_view(), name='interview-session'),
+    path('api/dashboard/interviews', InterviewHistoryView.as_view(), name='dashboard-interviews'),
+    
+    # Code Execution
+    path('api/execute', ExecuteCodeView.as_view(), name='execute-code'),
+    path('api/questions/<str:question_id>/submit', SubmitSolutionView.as_view(), name='submit-solution'),
+    
+    # Role Management
+    path('api/rooms/<str:room_id>/assign-role', AssignRoleView.as_view(), name='assign-role'),
+    path('api/rooms/<str:room_id>/permissions', RoomPermissionsView.as_view(), name='room-permissions'),
+    path('api/rooms/<str:room_id>/participants-roles', RoomParticipantsRolesView.as_view(), name='participants-roles'),
 ]

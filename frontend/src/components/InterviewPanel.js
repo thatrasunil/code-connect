@@ -1,33 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaClock, FaList, FaStickyNote, FaPlay, FaPause, FaRedo } from 'react-icons/fa';
+import { FaClock, FaList, FaStickyNote, FaPlay, FaPause, FaRedo, FaSave } from 'react-icons/fa';
+import config from '../config';
+import { useAuth } from '../contexts/AuthContext';
 
 const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
     const [activeTab, setActiveTab] = useState('questions'); // questions, notes
     const [timer, setTimer] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [notes, setNotes] = useState('');
+    const [score, setScore] = useState(0);
     const [questions, setQuestions] = useState([]);
+    const [selectedQuestion, setSelectedQuestion] = useState(null);
+    const [testCases, setTestCases] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { token } = useAuth();
 
     useEffect(() => {
-        // Simulate lazy loading of questions
-        // In a real app, this would be an API call or dynamic import
         const loadQuestions = async () => {
             setIsLoading(true);
-            await new Promise(r => setTimeout(r, 800)); // Simulate network delay
-            const QUESTIONS = [
-                { id: 1, title: 'Two Sum', difficulty: 'Easy', content: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.' },
-                { id: 2, title: 'Reverse Linked List', difficulty: 'Easy', content: 'Given the head of a singly linked list, reverse the list, and return the reversed list.' },
-                { id: 3, title: 'LRU Cache', difficulty: 'Medium', content: 'Design a data structure that follows the constraints of a Least Recently Used (LRU) cache.' },
-                { id: 4, title: 'Merge Intervals', difficulty: 'Medium', content: 'Given an array of intervals where intervals[i] = [start, end], merge all overlapping intervals.' },
-                { id: 5, title: 'Valid Parentheses', difficulty: 'Easy', content: 'Given a string s containing just the characters (, ), {, }, [ and ], determine if the input string is valid.' }
-            ];
-            setQuestions(QUESTIONS);
-            setIsLoading(false);
+            try {
+                const res = await fetch(`${config.BACKEND_URL}/api/questions`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setQuestions(data);
+                }
+            } catch (err) {
+                console.error("Failed to load questions", err);
+            } finally {
+                setIsLoading(false);
+            }
         };
+
+        const loadSession = async () => {
+            try {
+                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/session`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setNotes(data.notes || '');
+                    setScore(data.score || 0);
+                }
+            } catch (err) { console.error("Failed to load session", err); }
+        };
+
         loadQuestions();
-    }, []);
+        loadSession();
+    }, [roomId]);
 
     useEffect(() => {
         let interval;
@@ -46,6 +64,31 @@ const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
     const handlePostQuestion = (q) => {
         const text = `// QUESTION: ${q.title} (${q.difficulty})\n// ${q.content}\n\n`;
         onPostQuestion(text);
+        setSelectedQuestion(q);
+        // Load test cases for this question (mock for now)
+        setTestCases([
+            { input: '[2,7,11,15], 9', expected: '[0,1]' },
+            { input: '[3,2,4], 6', expected: '[1,2]' }
+        ]);
+    };
+
+    const handleSaveSession = async () => {
+        try {
+            const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/session`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({ notes, score })
+            });
+            if (res.ok) {
+                alert("Evaluation saved!");
+            }
+        } catch (err) {
+            console.error("Failed to save session", err);
+            alert("Failed to save evaluation.");
+        }
     };
 
     return (
@@ -80,6 +123,14 @@ const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
                 >
                     <FaStickyNote style={{ marginRight: '6px' }} /> Private Notes
                 </button>
+                {selectedQuestion && (
+                    <button
+                        onClick={() => setActiveTab('testcases')}
+                        style={{ flex: 1, padding: '0.75rem', background: activeTab === 'testcases' ? 'var(--bg-tertiary)' : 'transparent', border: 'none', color: 'white', cursor: 'pointer', borderBottom: activeTab === 'testcases' ? '2px solid var(--accent-primary)' : 'none' }}
+                    >
+                        <FaPlay style={{ marginRight: '6px' }} /> Test Cases
+                    </button>
+                )}
             </div>
 
             {/* Content */}
@@ -109,18 +160,64 @@ const InterviewPanel = ({ socket, roomId, onPostQuestion }) => {
                             ))
                         )}
                     </div>
-                ) : (
-                    <div className="notes-section" style={{ height: '100%' }}>
-                        <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Write private notes about the candidate here..."
-                            style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', resize: 'none', outline: 'none', fontFamily: 'sans-serif' }}
-                        />
+                ) : activeTab === 'notes' ? (
+                    <div className="notes-section" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ flex: 1, background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '10px' }}>
+                            <textarea
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Write private notes about the candidate here..."
+                                style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', resize: 'none', outline: 'none', fontFamily: 'sans-serif' }}
+                            />
+                        </div>
+
+                        <div style={{ background: 'rgba(255,255,255,0.05)', padding: '15px', borderRadius: '8px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                <label style={{ fontWeight: 'bold' }}>Candidate Score: {score}/100</label>
+                            </div>
+                            <input
+                                type="range"
+                                min="0" max="100"
+                                value={score}
+                                onChange={(e) => setScore(parseInt(e.target.value))}
+                                style={{ width: '100%', cursor: 'pointer' }}
+                            />
+                            <div style={{ marginTop: '15px', textAlign: 'right' }}>
+                                <button onClick={handleSaveSession} className="btn primary-btn" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}>
+                                    <FaSave /> Save Evaluation
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                )}
+                ) : activeTab === 'testcases' ? (
+                    <div className="testcases-section" style={{ padding: '1rem' }}>
+                        <h4 style={{ marginBottom: '1rem', color: 'var(--accent-primary)' }}>Test Cases for {selectedQuestion?.title}</h4>
+                        {testCases.length === 0 ? (
+                            <p style={{ color: 'var(--text-secondary)' }}>No test cases available</p>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                {testCases.map((tc, index) => (
+                                    <div key={index} className="glass-card" style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)' }}>
+                                        <div style={{ marginBottom: '0.5rem' }}>
+                                            <strong>Input:</strong>
+                                            <div style={{ background: '#1e293b', padding: '0.5rem', borderRadius: '4px', marginTop: '0.25rem', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                                                {tc.input}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <strong>Expected Output:</strong>
+                                            <div style={{ background: '#1e293b', padding: '0.5rem', borderRadius: '4px', marginTop: '0.25rem', fontFamily: 'monospace', fontSize: '0.85rem', color: '#10b981' }}>
+                                                {tc.expected}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ) : null}
             </div>
-        </div>
+        </div >
     );
 };
 

@@ -338,6 +338,55 @@ class RoomTypingView(APIView):
         
         return Response(active_users)
 
+class HeartbeatView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, room_id):
+        user_id = request.data.get('userId')
+        username = request.data.get('username', 'Guest')
+        avatar = request.data.get('avatar') # Optional
+        
+        if not user_id:
+            return Response({'error': 'userId required'}, status=400)
+            
+        key = f'room_participants_{room_id}'
+        participants = cache.get(key, {})
+        
+        # Update timestamp and info
+        participants[user_id] = {
+            'username': username,
+            'avatar': avatar,
+            'last_seen': time.time()
+        }
+        
+        # Cleanup old participants (timeout > 10s)
+        current_time = time.time()
+        participants = {uid: data for uid, data in participants.items() if current_time - data['last_seen'] < 10}
+        
+        cache.set(key, participants, timeout=30)
+        return Response({'success': True})
+
+class RoomParticipantsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, room_id):
+        key = f'room_participants_{room_id}'
+        participants = cache.get(key, {})
+        
+        # Return list of participant info
+        active_list = []
+        current_time = time.time()
+        
+        for uid, data in participants.items():
+            if current_time - data['last_seen'] < 10:
+                active_list.append({
+                    'userId': uid,
+                    'name': data['username'],
+                    'avatar': data.get('avatar')
+                })
+                
+        return Response(active_list)
+
 class LeaderboardView(APIView):
     permission_classes = [permissions.AllowAny]
 
