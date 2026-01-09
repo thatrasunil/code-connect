@@ -1,0 +1,37 @@
+Testing DB Connection...
+2026-01-07 14:34:40,561 INFO sqlalchemy.engine.Engine SELECT DATABASE()
+2026-01-07 14:34:40,561 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-07 14:34:40,562 INFO sqlalchemy.engine.Engine SELECT @@sql_mode
+2026-01-07 14:34:40,562 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-07 14:34:40,563 INFO sqlalchemy.engine.Engine SELECT @@lower_case_table_names
+2026-01-07 14:34:40,563 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-07 14:34:40,564 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-07 14:34:40,564 INFO sqlalchemy.engine.Engine DESCRIBE `codeconnect`.`rooms`
+2026-01-07 14:34:40,564 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-07 14:34:40,568 INFO sqlalchemy.engine.Engine DESCRIBE `codeconnect`.`messages`
+2026-01-07 14:34:40,568 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-07 14:34:40,570 INFO sqlalchemy.engine.Engine DESCRIBE `codeconnect`.`room_participants`
+2026-01-07 14:34:40,570 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-07 14:34:40,572 INFO sqlalchemy.engine.Engine DESCRIBE `codeconnect`.`users`
+2026-01-07 14:34:40,572 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-01-07 14:34:40,574 INFO sqlalchemy.engine.Engine COMMIT
+Tables created/verified.
+Connected.
+Testing insertion...
+Generated Room ID: 90216400
+2026-01-07 14:34:40,586 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-01-07 14:34:40,588 INFO sqlalchemy.engine.Engine INSERT INTO rooms (id, room_id, code, language, created_at, ended_at) VALUES (%s, %s, %s, %s, %s, %s)
+2026-01-07 14:34:40,588 INFO sqlalchemy.engine.Engine [generated in 0.00037s] ('90216400', '90216400', '', 'javascript', datetime.datetime(2026, 1, 7, 9, 4, 40, 588646), None)
+2026-01-07 14:34:40,589 INFO sqlalchemy.engine.Engine ROLLBACK
+Error creating room: (pymysql.err.OperationalError) (1054, "Unknown column 'room_id' in 'field list'")
+[SQL: INSERT INTO rooms (id, room_id, code, language, created_at, ended_at) VALUES (%s, %s, %s, %s, %s, %s)]
+[parameters: ('90216400', '90216400', '', 'javascript', datetime.datetime(2026, 1, 7, 9, 4, 40, 588646), None)]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+Exception ignored in: <function Connection.__del__ at 0x0000029672CE1120>
+Traceback (most recent call last):
+  File "D:\codeconnect\backend_python\venv\Lib\site-packages\aiomysql\connection.py", line 1131, in __del__
+  File "D:\codeconnect\backend_python\venv\Lib\site-packages\aiomysql\connection.py", line 339, in close
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\proactor_events.py", line 109, in close
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\base_events.py", line 833, in call_soon
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\base_events.py", line 556, in _check_closed
+RuntimeError: Event loop is closed

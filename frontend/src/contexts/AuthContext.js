@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import config from '../config';
 
 const AuthContext = createContext();
 
@@ -9,30 +10,30 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Backend URL (dynamic based on env or default)
-    const BACKEND_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
+    const BACKEND_URL = config.BACKEND_URL;
 
     useEffect(() => {
-        // Check for token in localStorage on mount
+        checkUserLoggedIn();
+    }, []);
+
+    const checkUserLoggedIn = async () => {
         const token = localStorage.getItem('token');
         if (token) {
             try {
                 const decoded = jwtDecode(token);
-                // Optional: Check expiration
                 if (decoded.exp * 1000 < Date.now()) {
                     logout();
                 } else {
-                    // Ideally fetch fresh user data here, but for now decode is enough for ID
-                    // We can fetch profile
-                    fetchUserProfile(token);
+                    await fetchUserProfile(token);
                 }
             } catch (err) {
+                console.error("Token invalid", err);
                 logout();
             }
-        } else {
-            setLoading(false);
         }
-    }, []);
+        setLoading(false);
+    };
 
     const fetchUserProfile = async (token) => {
         try {
@@ -48,68 +49,61 @@ export const AuthProvider = ({ children }) => {
         } catch (err) {
             console.error(err);
             logout();
-        } finally {
-            setLoading(false);
         }
     };
 
     const login = async (username, password) => {
-        const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            localStorage.setItem('token', data.token);
-            setUser(data.user);
-            return { success: true };
-        } else {
-            return { success: false, error: data.error };
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                localStorage.setItem('token', data.access);
+                localStorage.setItem('refresh', data.refresh);
+                await fetchUserProfile(data.access);
+                return { success: true };
+            } else {
+                return { success: false, error: data.detail || "Login failed" };
+            }
+        } catch (err) {
+            return { success: false, error: "Network error" };
         }
     };
 
     const register = async (username, email, password) => {
-        const res = await fetch(`${BACKEND_URL}/api/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            localStorage.setItem('token', data.token);
-            setUser(data.user);
-            return { success: true };
-        } else {
-            return { success: false, error: data.error };
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password })
+            });
+
+            if (res.ok) {
+                // Auto-login after register? Or just return success
+                return { success: true };
+            } else {
+                const data = await res.json();
+                // Format error message from Django serializer errors
+                const errorMsg = Object.values(data).flat().join(', ');
+                return { success: false, error: errorMsg || "Registration failed" };
+            }
+        } catch (err) {
+            return { success: false, error: "Network error" };
         }
     };
 
     const logout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('refresh');
         setUser(null);
     };
 
-    const addToHistory = async (roomId) => {
-        if (!user) return;
-        try {
-            const token = localStorage.getItem('token');
-            await fetch(`${BACKEND_URL}/api/user/history`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ roomId })
-            });
-            // Optionally update local user state history
-        } catch (err) {
-            console.error("Failed to save history", err);
-        }
-    };
-
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading, addToHistory }}>
+        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
             {!loading && children}
         </AuthContext.Provider>
     );

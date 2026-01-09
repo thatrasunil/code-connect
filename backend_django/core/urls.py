@@ -1,0 +1,40 @@
+from django.urls import path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .views import (
+    SignupView, CreateRoomView, RoomDetailView, UserProfileView,
+    DashboardStatsView, MyRoomsView, FileUploadView,
+    RoomMetadataView, RoomLanguageView, RoomCodeView, RootView,
+    AIChatView, AIExplainView, AIInterviewView, RoomMessageView,
+    TypingStatusView, RoomTypingView, LeaderboardView
+)
+
+urlpatterns = [
+    path('api/leaderboard', LeaderboardView.as_view(), name='leaderboard'),
+    path('', RootView.as_view(), name='root'),
+
+    # Auth
+    path('api/auth/signup', SignupView.as_view(), name='signup'),
+    path('api/auth/login', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/auth/refresh', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/auth/me', UserProfileView.as_view(), name='user_profile'),
+    
+    # Dashboard
+    path('api/dashboard/stats', DashboardStatsView.as_view(), name='dashboard_stats'),
+    path('api/rooms/my-rooms', MyRoomsView.as_view(), name='my_rooms'),
+    path('api/rooms/<str:room_id>/metadata/', RoomMetadataView.as_view(), name='room_metadata'),
+    path('api/rooms/<str:room_id>/language/', RoomLanguageView.as_view(), name='room_language'),
+    path('api/rooms/<str:room_id>/code/', RoomCodeView.as_view(), name='room_code'),
+    path('api/upload', FileUploadView.as_view(), name='file_upload'),
+    
+    # AI
+    path('api/ai/chat', AIChatView.as_view(), name='ai_chat'),
+    path('api/ai/explain', AIExplainView.as_view(), name='ai_explain'),
+    path('api/ai/interview', AIInterviewView.as_view(), name='ai_interview'),
+
+    # Rooms
+    path('api/create-room', CreateRoomView.as_view(), name='create-room'),
+    path('api/room/<str:room_id>', RoomDetailView.as_view(), name='room-detail'),
+    path('api/rooms/<str:room_id>/messages', RoomMessageView.as_view(), name='room-messages'),
+    path('api/rooms/<str:room_id>/typing', TypingStatusView.as_view(), name='room-typing-status'),
+    path('api/rooms/<str:room_id>/typing/active', RoomTypingView.as_view(), name='room-typing-active'),
+]

@@ -1,0 +1,10 @@
+django>=5.0
+djangorestframework
+django-cors-headers
+python-socketio[asgi]
+uvicorn
+gunicorn
+python-dotenv
+asgiref
+djangorestframework-simplejwt
+google-generativeai

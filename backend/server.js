@@ -140,6 +140,38 @@ app.get('/api/room/:roomId', async (req, res) => {
   }
 });
 
+// --- AI Configuration ---
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+app.post('/api/ai/chat', async (req, res) => {
+  const { prompt, context } = req.body;
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const fullPrompt = context ? `${context}\n\nUser: ${prompt}` : prompt;
+    const result = await model.generateContent(fullPrompt);
+    const response = await result.response;
+    res.json({ response: response.text() });
+  } catch (err) {
+    console.error('AI Error:', err);
+    res.status(500).json({ error: 'AI generation failed' });
+  }
+});
+
+app.post('/api/ai/explain', async (req, res) => {
+  const { code, language } = req.body;
+  try {
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const prompt = `Explain the following ${language} code in simple terms:\n\n\`\`\`${language}\n${code}\n\`\`\``;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    res.json({ response: response.text() });
+  } catch (err) {
+    console.error('AI Error:', err);
+    res.status(500).json({ error: 'AI generation failed' });
+  }
+});
+
 // --- Socket.IO Events ---
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);

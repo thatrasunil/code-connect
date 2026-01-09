@@ -1,0 +1,77 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = "mysql://root:2837@localhost:3306/codeconnect"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique @db.VarChar(50)
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  avatar    String   @default("https://api.dicebear.com/7.x/avataaars/svg?seed=Felix") @db.Text
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  roomHistory RoomHistory[]
+
+  @@map("users")
+}
+
+model Room {
+  id        String   @id @default(cuid())
+  roomId    String   @unique @db.VarChar(20)
+  code      String   @default("") @db.Text
+  language  String   @default("javascript") @db.VarChar(50)
+  createdAt DateTime @default(now()) @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @db.Timestamp(6)
+
+  // Relations
+  messages  Message[]
+  users     RoomHistory[]
+
+  @@map("rooms")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  userId    String   @db.VarChar(255)
+  content   String   @db.Text
+  type      MessageType @default(TEXT)
+  timestamp DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model RoomHistory {
+  id       String   @id @default(cuid())
+  userId   String   @db.VarChar(255)
+  joinedAt DateTime @default(now()) @db.Timestamp(6)
+
+  // Relations
+  roomId   String
+  room     Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("room_history")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum MessageType {
+  TEXT
+}

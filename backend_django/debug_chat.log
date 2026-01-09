@@ -1,0 +1,586 @@
+2026-01-04 19:42:52,903 DEBUG: User connected: fMTTV8zwe_37IwUwAAAC
+2026-01-04 19:42:52,907 DEBUG: User connected: anlIDwtyyD5_etEqAAAD
+2026-01-04 19:43:26,926 DEBUG: User connected: iHjHZ7hD5DAIE9PYAAAG
+2026-01-04 19:43:26,928 DEBUG: join-room sid=iHjHZ7hD5DAIE9PYAAAG room=debug-room user=User2
+2026-01-04 19:43:27,881 DEBUG: User connected: JXzHb03_SoScVUzxAAAH
+2026-01-04 19:43:27,883 DEBUG: join-room sid=JXzHb03_SoScVUzxAAAH room=debug-room user=User1
+2026-01-04 19:43:28,960 DEBUG: Broadcasting new message to room debug-room: Hello from User1
+2026-01-04 19:43:28,961 DEBUG: Broadcast successful
+2026-01-04 19:49:43,536 DEBUG: User connected: vpTlaBh8KKBRtACVAAAJ
+2026-01-04 19:49:43,552 DEBUG: join-room sid=vpTlaBh8KKBRtACVAAAJ room=71781213 user=Guest-vpTl
+2026-01-04 19:49:43,561 DEBUG: join-room sid=vpTlaBh8KKBRtACVAAAJ room=71781213 user=Guest-vpTl
+2026-01-04 19:49:47,678 DEBUG: Broadcasting new message to room 71781213: ghfff
+2026-01-04 19:49:47,678 DEBUG: Broadcast successful
+2026-01-04 19:49:52,713 DEBUG: Broadcasting new message to room  71781213: srwhbg
+2026-01-04 19:49:52,713 DEBUG: Broadcast successful
+2026-01-06 21:56:43,528 Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+2026-01-06 21:56:43,529 Not Found: /static/rest_framework/css/bootstrap.min.css
+2026-01-06 21:56:43,530 Not Found: /static/rest_framework/css/prettify.css
+2026-01-06 21:56:43,561 Not Found: /static/rest_framework/js/ajax-form.js
+2026-01-06 21:56:43,562 Not Found: /static/rest_framework/css/default.css
+2026-01-06 21:56:43,563 Not Found: /static/rest_framework/js/jquery-3.5.1.min.js
+2026-01-06 21:56:43,590 Not Found: /static/rest_framework/js/bootstrap.min.js
+2026-01-06 21:56:43,592 Not Found: /static/rest_framework/js/csrf.js
+2026-01-06 21:56:43,593 Not Found: /static/rest_framework/js/prettify-min.js
+2026-01-06 21:56:43,609 Not Found: /static/rest_framework/js/default.js
+2026-01-06 21:56:43,651 Not Found: /favicon.ico
+2026-01-06 21:57:08,894 Not Found: /static/rest_framework/css/bootstrap.min.css
+2026-01-06 21:57:08,894 Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+2026-01-06 21:57:08,918 Not Found: /static/rest_framework/css/prettify.css
+2026-01-06 21:57:08,920 Not Found: /static/rest_framework/css/default.css
+2026-01-06 21:57:08,944 Not Found: /static/rest_framework/js/ajax-form.js
+2026-01-06 21:57:08,944 Not Found: /static/rest_framework/js/jquery-3.5.1.min.js
+2026-01-06 21:57:08,964 Not Found: /static/rest_framework/js/csrf.js
+2026-01-06 21:57:08,973 Not Found: /static/rest_framework/js/bootstrap.min.js
+2026-01-06 21:57:08,988 Not Found: /static/rest_framework/js/prettify-min.js
+2026-01-06 21:57:08,993 Not Found: /static/rest_framework/js/default.js
+2026-01-06 22:00:08,974 Not Found: /static/rest_framework/css/bootstrap.min.css
+2026-01-06 22:00:08,974 Not Found: /static/rest_framework/css/bootstrap-tweaks.css
+2026-01-06 22:00:08,998 Not Found: /static/rest_framework/css/prettify.css
+2026-01-06 22:00:08,998 Not Found: /static/rest_framework/css/default.css
+2026-01-06 22:00:09,023 Not Found: /static/rest_framework/js/jquery-3.5.1.min.js
+2026-01-06 22:00:09,024 Not Found: /static/rest_framework/js/ajax-form.js
+2026-01-06 22:00:09,042 Not Found: /static/rest_framework/js/csrf.js
+2026-01-06 22:00:09,043 Not Found: /static/rest_framework/js/bootstrap.min.js
+2026-01-06 22:00:09,066 Not Found: /static/rest_framework/js/prettify-min.js
+2026-01-06 22:00:09,067 Not Found: /static/rest_framework/js/default.js
+2026-01-06 22:00:09,089 Not Found: /favicon.ico
+2026-01-07 06:46:35,846 DEBUG: User connected: HnOBNokNcRwUYGlAAAAB
+2026-01-07 06:47:07,278 DEBUG: User connected: U19jfbTgqfZJDGs-AAAD
+2026-01-07 06:47:37,267 DEBUG: User connected: zr0e4gPUVzHRcL_lAAAF
+2026-01-07 07:01:45,122 DEBUG: User connected: iiRIrBSqoGR5xigfAAAH
+2026-01-07 07:05:33,352 DEBUG: User connected: zLM0O1pgdVIEy-L2AAAJ
+2026-01-07 07:06:57,619 DEBUG: User connected: 2R569k52GpmmfpPKAAAL
+2026-01-07 07:09:03,094 User disconnected: zr0e4gPUVzHRcL_lAAAF
+2026-01-07 07:09:04,133 DEBUG: User connected: Xv9-xiU7omwkkvdVAAAN
+2026-01-07 07:10:08,232 DEBUG: User connected: jnuiujVqfzzMOtmOAAAP
+2026-01-07 07:10:12,721 DEBUG: User connected: LADd8tnn8wVJs68DAAAR
+2026-01-07 07:10:18,784 DEBUG: User connected: Cs3vnXORWpYiUUYJAAAT
+2026-01-07 07:10:26,198 User disconnected: LADd8tnn8wVJs68DAAAR
+2026-01-07 07:10:26,427 User disconnected: Cs3vnXORWpYiUUYJAAAT
+2026-01-07 07:10:40,331 User disconnected: jnuiujVqfzzMOtmOAAAP
+2026-01-07 07:10:42,259 DEBUG: User connected: fCrva6h8XmvScGtkAAAV
+2026-01-07 07:10:46,231 DEBUG: User connected: evOYb90W_XQpVulpAAAX
+2026-01-07 07:11:38,271 DEBUG: User connected: pnJ6gBs0AbZzTGjcAAAZ
+2026-01-07 07:18:03,695 DEBUG: User connected: wbp4LgjpPi_1D-I6AAAb
+2026-01-07 07:18:03,711 DEBUG: User connected: JZGdHwarKRa03_6sAAAd
+2026-01-07 07:18:03,725 DEBUG: User connected: EWIMwfM9Gi1q1w45AAAf
+2026-01-07 07:18:03,743 DEBUG: User connected: tFlefqzpD8a7xiWgAAAj
+2026-01-07 07:18:03,744 DEBUG: User connected: 3zk2NQP1XDrLUVKHAAAk
+2026-01-07 07:18:03,745 DEBUG: User connected: el21AfsVSDFkJWb0AAAl
+2026-01-07 07:18:03,756 DEBUG: User connected: Tw7GGo8fhFj5eEoNAAAn
+2026-01-07 07:18:03,773 DEBUG: User connected: -feZihSPEjfhxGxwAAAp
+2026-01-07 07:18:03,786 DEBUG: User connected: rVQUL5SkMTk_gxtfAAAs
+2026-01-07 07:18:03,787 DEBUG: User connected: uW2KPtH1jZFK4t-DAAAt
+2026-01-07 07:18:03,801 DEBUG: User connected: Bnu_pc_o71lVKqBUAAAw
+2026-01-07 07:18:03,802 DEBUG: User connected: 9mTj8MObsUV2DLjcAAAx
+2026-01-07 07:18:03,817 DEBUG: User connected: GTzq1OdATFqDqk8NAAAz
+2026-01-07 07:18:03,832 DEBUG: User connected: Wo1BSgZFRALeF0vYAAA1
+2026-01-07 07:18:03,846 DEBUG: User connected: 2evPbl4b9EkyGvUCAAA3
+2026-01-07 07:18:03,862 DEBUG: User connected: 91z4-VV1C13xFPclAAA5
+2026-01-07 07:18:03,879 DEBUG: User connected: HFMarhnWyREl66UIAAA7
+2026-01-07 07:18:03,894 DEBUG: User connected: Ojt5ngK0g6C2dPtVAAA9
+2026-01-07 07:18:52,062 DEBUG: User connected: _6YoEG3zfnBfc7TpAAA_
+2026-01-07 07:20:34,274 DEBUG: User connected: M4g5t3xW3hIyoe1BAABB
+2026-01-07 07:21:39,135 DEBUG: User connected: z0HOqqMb_qhcXLtNAABD
+2026-01-07 07:24:55,954 DEBUG: User connected: ibLNBDEg4CH1cEtPAABF
+2026-01-07 07:25:48,616 DEBUG: User connected: DFJsr8jXE9rn0xxrAABH
+2026-01-07 07:28:49,737 DEBUG: User connected: XrWmVBK-GMVOGV5WAABJ
+2026-01-07 07:29:52,234 DEBUG: User connected: BCqzpm-AUGuo0P-bAABL
+2026-01-07 07:33:52,121 DEBUG: User connected: vbKqufctyzH3ZAaPAABN
+2026-01-07 07:35:34,299 DEBUG: User connected: szGmg65EUwuotnb_AABQ
+2026-01-07 07:35:34,303 DEBUG: User connected: Gfos-_iaEWRhNt6IAABR
+2026-01-07 07:35:34,315 DEBUG: User connected: OYpUZPe8puNWTLY5AABT
+2026-01-07 07:35:34,348 DEBUG: User connected: RWKguwu1ohV5-UA9AABW
+2026-01-07 07:35:34,352 DEBUG: User connected: 01tv19_Az8-PjYUOAABX
+2026-01-07 07:35:34,362 DEBUG: User connected: NRdr3oYBRJKWoTMzAABZ
+2026-01-07 07:35:34,369 DEBUG: User connected: 4nGugQwbHH2NEKeTAABb
+2026-01-07 07:35:34,384 DEBUG: User connected: aF0MF4auRIjdWHumAABd
+2026-01-07 07:35:34,400 DEBUG: User connected: nnx0C8ZpvdDdZwxWAABf
+2026-01-07 07:35:34,415 DEBUG: User connected: -hLt3squ1qulwmWtAABh
+2026-01-07 07:35:34,429 DEBUG: User connected: hnyVPhPxWnCDFZSrAABj
+2026-01-07 07:35:34,447 DEBUG: User connected: 3oDt4r7vDcLQJ4v6AABl
+2026-01-07 07:35:34,460 DEBUG: User connected: N3lGUCCatoUrjH3FAABn
+2026-01-07 07:35:34,479 DEBUG: User connected: 9apdMnzOM-eg9_gmAABp
+2026-01-07 07:35:34,492 DEBUG: User connected: Mpt7YUJzIg-vxoEbAABr
+2026-01-07 07:35:34,509 DEBUG: User connected: iKgPWnBGrUFtyaBxAABt
+2026-01-07 07:35:34,524 DEBUG: User connected: HBPSwNzE3y0Epla5AABv
+2026-01-07 07:36:06,412 DEBUG: User connected: 8TKvMSLgvXKvgko6AABx
+2026-01-07 07:36:32,931 User disconnected: 8TKvMSLgvXKvgko6AABx
+2026-01-07 07:36:33,464 DEBUG: User connected: 33wOD-V3rdd1O6wuAABz
+2026-01-07 07:53:16,821 User disconnected: 33wOD-V3rdd1O6wuAABz
+2026-01-07 07:53:17,183 DEBUG: User connected: aC4t6YNqB4L8AHn2AAB1
+2026-01-07 07:55:11,063 DEBUG: User connected: nlKa1GUeUbidV02MAAB3
+2026-01-07 07:55:51,554 User disconnected: Gfos-_iaEWRhNt6IAABR
+2026-01-07 07:55:51,554 User disconnected: vbKqufctyzH3ZAaPAABN
+2026-01-07 07:55:51,559 User disconnected: Tw7GGo8fhFj5eEoNAAAn
+2026-01-07 07:55:51,560 User disconnected: pnJ6gBs0AbZzTGjcAAAZ
+2026-01-07 07:55:51,560 User disconnected: 01tv19_Az8-PjYUOAABX
+2026-01-07 07:55:51,561 User disconnected: 9mTj8MObsUV2DLjcAAAx
+2026-01-07 07:55:51,569 User disconnected: NRdr3oYBRJKWoTMzAABZ
+2026-01-07 07:55:51,569 User disconnected: fCrva6h8XmvScGtkAAAV
+2026-01-07 07:55:51,570 User disconnected: wbp4LgjpPi_1D-I6AAAb
+2026-01-07 07:55:51,570 User disconnected: tFlefqzpD8a7xiWgAAAj
+2026-01-07 07:55:57,345 DEBUG: User connected: h9Z8gwFpH4IaoBCAAAB6
+2026-01-07 07:55:57,377 DEBUG: User connected: rO3d0Fztxvd9M-C0AAB7
+2026-01-07 07:57:02,837 DEBUG: User connected: BdRwAPjdqnOyvLY0AAB9
+2026-01-07 07:57:03,179 DEBUG: User connected: SBtT-nQBOAYguMnyAAB_
+2026-01-07 07:57:07,888 DEBUG: User connected: lREOKlJZklPpN7b0AACB
+2026-01-07 07:57:08,187 DEBUG: User connected: 2gvddOplUhHty5NfAACD
+2026-01-07 07:57:56,978 User disconnected: SBtT-nQBOAYguMnyAAB_
+2026-01-07 07:57:56,979 User disconnected: BdRwAPjdqnOyvLY0AAB9
+2026-01-07 07:57:56,984 User disconnected: h9Z8gwFpH4IaoBCAAAB6
+2026-01-07 07:57:56,984 User disconnected: rO3d0Fztxvd9M-C0AAB7
+2026-01-07 07:57:56,995 User disconnected: lREOKlJZklPpN7b0AACB
+2026-01-07 07:57:56,995 User disconnected: 2gvddOplUhHty5NfAACD
+2026-01-07 07:58:02,113 DEBUG: User connected: Vu29N9F8w_nbOmuwAACF
+2026-01-07 07:58:02,472 DEBUG: User connected: jh4P--1RW47nfV01AACH
+2026-01-07 07:59:35,803 DEBUG: User connected: jWZvgQig2Wm9jHSGAACJ
+2026-01-07 07:59:36,131 DEBUG: User connected: hJL8yoT9A-7R9dDdAACL
+2026-01-07 07:59:41,772 DEBUG: User connected: nyIMbqD7VJaZcAJvAACN
+2026-01-07 07:59:42,096 DEBUG: User connected: tV34gv8UsKiQS13RAACP
+2026-01-07 07:59:45,608 User disconnected: jWZvgQig2Wm9jHSGAACJ
+2026-01-07 07:59:45,609 User disconnected: hJL8yoT9A-7R9dDdAACL
+2026-01-07 07:59:45,624 User disconnected: nyIMbqD7VJaZcAJvAACN
+2026-01-07 07:59:45,625 User disconnected: tV34gv8UsKiQS13RAACP
+2026-01-07 07:59:45,628 User disconnected: Vu29N9F8w_nbOmuwAACF
+2026-01-07 07:59:45,629 User disconnected: jh4P--1RW47nfV01AACH
+2026-01-07 07:59:52,725 DEBUG: User connected: k9ZVpIUotSLAjf7kAACR
+2026-01-07 07:59:53,002 DEBUG: User connected: wPPDq8WCh-Bh8eSEAACT
+2026-01-07 07:59:54,999 DEBUG: User connected: WRrEmo28yvJOwzyxAACV
+2026-01-07 07:59:55,339 DEBUG: User connected: sijJyKD4AdaTzcw8AACX
+2026-01-07 08:00:23,294 User disconnected: k9ZVpIUotSLAjf7kAACR
+2026-01-07 08:00:23,295 User disconnected: wPPDq8WCh-Bh8eSEAACT
+2026-01-07 08:00:23,296 User disconnected: WRrEmo28yvJOwzyxAACV
+2026-01-07 08:00:23,299 User disconnected: sijJyKD4AdaTzcw8AACX
+2026-01-07 08:00:33,032 DEBUG: User connected: HvaDosYfZt3ofNmgAACa
+2026-01-07 08:00:33,132 DEBUG: User connected: TLYD6adIhpHn9lieAACc
+2026-01-07 08:00:33,197 DEBUG: User connected: GnGzIv112keWY0YGAACd
+2026-01-07 08:00:33,466 DEBUG: User connected: ZG3VNtpcuGXj-VpHAACg
+2026-01-07 08:00:33,543 DEBUG: User connected: th55oY0sBckM5qppAACi
+2026-01-07 08:00:33,593 DEBUG: User connected: lSME-Z6dzDpHlKArAACj
+2026-01-07 08:01:01,115 Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\events.py", line 89, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+2026-01-07 08:01:01,139 User disconnected: th55oY0sBckM5qppAACi
+2026-01-07 08:01:01,141 User disconnected: GnGzIv112keWY0YGAACd
+2026-01-07 08:01:01,141 User disconnected: HvaDosYfZt3ofNmgAACa
+2026-01-07 08:01:01,141 User disconnected: lSME-Z6dzDpHlKArAACj
+2026-01-07 08:01:01,141 User disconnected: TLYD6adIhpHn9lieAACc
+2026-01-07 08:01:01,141 User disconnected: ZG3VNtpcuGXj-VpHAACg
+2026-01-07 08:01:10,041 DEBUG: User connected: a6fTMxdWGA6fB5irAACl
+2026-01-07 08:01:10,520 DEBUG: User connected: TFN2tJuKCA1yE5w0AACn
+2026-01-07 08:01:53,933 DEBUG: User connected: jEJxVooPJ1-aQ1ubAACq
+2026-01-07 08:01:54,209 DEBUG: User connected: NsoypLgP_xgLLzRjAACr
+2026-01-07 08:02:16,524 User disconnected: nlKa1GUeUbidV02MAAB3
+2026-01-07 08:02:17,387 DEBUG: User connected: jRd7LPGkFOVEv5RCAACt
+2026-01-07 08:05:45,408 User disconnected: aC4t6YNqB4L8AHn2AAB1
+2026-01-07 08:05:46,077 DEBUG: User connected: 1a1nFuX631o_gEYkAACv
+2026-01-07 08:06:35,631 DEBUG: User connected: JRpkCK3m5QftM8xsAACx
+2026-01-07 08:06:39,837 User disconnected: U19jfbTgqfZJDGs-AAAD
+2026-01-07 08:06:39,840 User disconnected: -feZihSPEjfhxGxwAAAp
+2026-01-07 08:06:39,841 User disconnected: 91z4-VV1C13xFPclAAA5
+2026-01-07 08:06:39,842 User disconnected: HBPSwNzE3y0Epla5AABv
+2026-01-07 08:06:40,489 User disconnected: Xv9-xiU7omwkkvdVAAAN
+2026-01-07 08:06:40,494 User disconnected: Bnu_pc_o71lVKqBUAAAw
+2026-01-07 08:06:40,495 User disconnected: iKgPWnBGrUFtyaBxAABt
+2026-01-07 08:06:40,495 User disconnected: 2evPbl4b9EkyGvUCAAA3
+2026-01-07 08:06:41,346 User disconnected: iiRIrBSqoGR5xigfAAAH
+2026-01-07 08:06:41,347 User disconnected: HFMarhnWyREl66UIAAA7
+2026-01-07 08:06:41,348 User disconnected: Mpt7YUJzIg-vxoEbAABr
+2026-01-07 08:06:41,349 User disconnected: Wo1BSgZFRALeF0vYAAA1
+2026-01-07 08:06:41,953 User disconnected: el21AfsVSDFkJWb0AAAl
+2026-01-07 08:06:41,956 User disconnected: N3lGUCCatoUrjH3FAABn
+2026-01-07 08:06:41,956 User disconnected: zLM0O1pgdVIEy-L2AAAJ
+2026-01-07 08:06:41,956 User disconnected: Ojt5ngK0g6C2dPtVAAA9
+2026-01-07 08:06:42,533 User disconnected: 2R569k52GpmmfpPKAAAL
+2026-01-07 08:06:42,535 User disconnected: GTzq1OdATFqDqk8NAAAz
+2026-01-07 08:06:42,536 User disconnected: uW2KPtH1jZFK4t-DAAAt
+2026-01-07 08:06:42,537 User disconnected: 9apdMnzOM-eg9_gmAABp
+2026-01-07 08:06:42,991 User disconnected: evOYb90W_XQpVulpAAAX
+2026-01-07 08:06:42,992 User disconnected: JZGdHwarKRa03_6sAAAd
+2026-01-07 08:06:42,993 User disconnected: EWIMwfM9Gi1q1w45AAAf
+2026-01-07 08:06:42,993 User disconnected: 4nGugQwbHH2NEKeTAABb
+2026-01-07 08:06:43,715 User disconnected: aF0MF4auRIjdWHumAABd
+2026-01-07 08:06:43,716 User disconnected: _6YoEG3zfnBfc7TpAAA_
+2026-01-07 08:06:44,254 User disconnected: M4g5t3xW3hIyoe1BAABB
+2026-01-07 08:06:44,255 User disconnected: nnx0C8ZpvdDdZwxWAABf
+2026-01-07 08:06:44,695 User disconnected: hnyVPhPxWnCDFZSrAABj
+2026-01-07 08:06:44,696 User disconnected: z0HOqqMb_qhcXLtNAABD
+2026-01-07 08:06:45,223 User disconnected: ibLNBDEg4CH1cEtPAABF
+2026-01-07 08:06:45,224 User disconnected: 3oDt4r7vDcLQJ4v6AABl
+2026-01-07 08:06:45,695 User disconnected: DFJsr8jXE9rn0xxrAABH
+2026-01-07 08:06:45,696 User disconnected: OYpUZPe8puNWTLY5AABT
+2026-01-07 08:06:46,174 User disconnected: XrWmVBK-GMVOGV5WAABJ
+2026-01-07 08:06:46,175 User disconnected: -hLt3squ1qulwmWtAABh
+2026-01-07 08:06:46,677 User disconnected: RWKguwu1ohV5-UA9AABW
+2026-01-07 08:06:46,678 User disconnected: BCqzpm-AUGuo0P-bAABL
+2026-01-07 08:06:47,181 User disconnected: 1a1nFuX631o_gEYkAACv
+2026-01-07 08:06:48,259 User disconnected: jRd7LPGkFOVEv5RCAACt
+2026-01-07 08:07:15,380 DEBUG: User connected: eflQYgh-SOS0M_1OAACz
+2026-01-07 08:09:01,536 User disconnected: a6fTMxdWGA6fB5irAACl
+2026-01-07 08:09:01,536 User disconnected: TFN2tJuKCA1yE5w0AACn
+2026-01-07 08:09:01,543 User disconnected: NsoypLgP_xgLLzRjAACr
+2026-01-07 08:09:01,547 User disconnected: jEJxVooPJ1-aQ1ubAACq
+2026-01-07 08:09:13,057 DEBUG: User connected: VxcP9DnQyELI5R-pAAC1
+2026-01-07 08:09:17,534 DEBUG: User connected: l6ULWX7BmNJeqz7KAAC4
+2026-01-07 08:09:17,960 DEBUG: User connected: d96xpJPXJvdu8jryAAC5
+2026-01-07 08:09:20,023 Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\events.py", line 89, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+2026-01-07 08:09:20,026 User disconnected: d96xpJPXJvdu8jryAAC5
+2026-01-07 08:09:21,477 User disconnected: l6ULWX7BmNJeqz7KAAC4
+2026-01-07 08:09:45,465 DEBUG: User connected: RiZp8XmVfeCVhTYHAAC7
+2026-01-07 08:11:47,389 User disconnected: VxcP9DnQyELI5R-pAAC1
+2026-01-07 08:11:47,391 User disconnected: RiZp8XmVfeCVhTYHAAC7
+2026-01-07 08:11:52,763 DEBUG: User connected: Kqu-FlQJY_xPps_AAAC9
+2026-01-07 08:14:54,761 DEBUG: User connected: m2yJTd6-XUnp9FB-AADB
+2026-01-07 08:15:13,862 DEBUG: User connected: AkwPsLR5MXxtHjx2AADD
+2026-01-07 08:15:21,690 User disconnected: Kqu-FlQJY_xPps_AAAC9
+2026-01-07 08:15:21,700 User disconnected: AkwPsLR5MXxtHjx2AADD
+2026-01-07 08:15:28,178 DEBUG: User connected: 5RQEoVn5iaTj20LBAADF
+2026-01-07 08:15:32,866 DEBUG: User connected: L8bv7dApRjZtiSTZAADH
+2026-01-07 08:15:34,085 DEBUG: User connected: Pf8XTBFd9wUj07GqAADJ
+2026-01-07 08:15:37,668 User disconnected: Pf8XTBFd9wUj07GqAADJ
+2026-01-07 08:15:37,936 User disconnected: L8bv7dApRjZtiSTZAADH
+2026-01-07 08:19:53,390 DEBUG: User connected: U0B7hneXJusS2rkMAADL
+2026-01-07 08:19:53,673 User disconnected: U0B7hneXJusS2rkMAADL
+2026-01-07 08:19:54,246 DEBUG: User connected: n_xOw6sKAqjGlPBJAADN
+2026-01-07 08:19:54,362 User disconnected: n_xOw6sKAqjGlPBJAADN
+2026-01-07 08:20:03,807 DEBUG: User connected: Vhp_P5GxHEl-KdzMAADP
+2026-01-07 08:20:23,589 User disconnected: Vhp_P5GxHEl-KdzMAADP
+2026-01-07 08:20:23,965 DEBUG: User connected: GUnQ4OqUmZohnyegAADR
+2026-01-07 08:22:29,255 DEBUG: User connected: 9FR8R7HyPXA0BHt3AADT
+2026-01-07 08:22:34,822 User disconnected: JRpkCK3m5QftM8xsAACx
+2026-01-07 08:22:41,223 User disconnected: eflQYgh-SOS0M_1OAACz
+2026-01-07 08:22:41,686 User disconnected: m2yJTd6-XUnp9FB-AADB
+2026-01-07 08:22:42,113 Exception in callback _ProactorBasePipeTransport._call_connection_lost()
+handle: <Handle _ProactorBasePipeTransport._call_connection_lost()>
+Traceback (most recent call last):
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\events.py", line 89, in _run
+    self._context.run(self._callback, *self._args)
+    ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\asyncio\proactor_events.py", line 165, in _call_connection_lost
+    self._sock.shutdown(socket.SHUT_RDWR)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+ConnectionResetError: [WinError 10054] An existing connection was forcibly closed by the remote host
+2026-01-07 08:22:42,116 User disconnected: GUnQ4OqUmZohnyegAADR
+2026-01-07 08:22:55,408 User disconnected: 9FR8R7HyPXA0BHt3AADT
+2026-01-07 08:22:55,880 DEBUG: User connected: eK3KVy7hGTJqp9EZAADV
+2026-01-07 08:23:43,345 DEBUG: User connected: 2Jae5haK_9GQi2G9AADX
+2026-01-07 08:30:35,092 DEBUG: User connected: X0_pTv34F9-Da71tAADZ
+2026-01-07 08:30:35,119 DEBUG: User connected: 1c94DbgMFw0TBHD7AADc
+2026-01-07 08:30:35,125 DEBUG: User connected: sfKXLGyms7FqGBr7AADe
+2026-01-07 08:30:35,127 DEBUG: User connected: 6kss6mwBLhF3QKEgAADf
+2026-01-07 08:30:36,031 User disconnected: 3zk2NQP1XDrLUVKHAAAk
+2026-01-07 08:30:36,033 User disconnected: szGmg65EUwuotnb_AABQ
+2026-01-07 08:30:36,034 User disconnected: HnOBNokNcRwUYGlAAAAB
+2026-01-07 08:30:36,034 User disconnected: X0_pTv34F9-Da71tAADZ
+2026-01-07 08:30:36,035 User disconnected: rVQUL5SkMTk_gxtfAAAs
+2026-01-07 08:30:52,044 User disconnected: 2Jae5haK_9GQi2G9AADX
+2026-01-07 08:30:52,045 User disconnected: 1c94DbgMFw0TBHD7AADc
+2026-01-07 08:30:52,696 DEBUG: User connected: FWY7zNuZnGpz45T1AADh
+2026-01-07 08:33:30,523 DEBUG: User connected: XmUACwjlGKqC7hPOAADj
+2026-01-07 08:33:30,541 DEBUG: User connected: cM_5aifSLnp2QdP1AADl
+2026-01-07 08:33:30,555 DEBUG: User connected: yHeKJTC6hc_4Q8oxAADn
+2026-01-07 08:33:30,568 DEBUG: User connected: ZcHi3o68WJfVJqasAADp
+2026-01-07 08:33:30,592 DEBUG: User connected: 5zJK8z97fai-o1k8AADr
+2026-01-07 08:33:30,610 DEBUG: User connected: WA3qEz7hnBztiw_gAADt
+2026-01-07 08:39:03,817 DEBUG: User connected: Jv1_tMxMnHFAPjjxAADw
+2026-01-07 08:39:03,818 DEBUG: User connected: hvJK-5eGNhQ8ZneYAADx
+2026-01-07 08:39:03,832 DEBUG: User connected: ssJiGxN1nL59MF1xAADz
+2026-01-07 08:40:49,438 Internal Server Error: /api/create-room
+Traceback (most recent call last):
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\backends\sqlite3\base.py", line 328, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+sqlite3.IntegrityError: NOT NULL constraint failed: rooms.is_public
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\asgiref\sync.py", line 555, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\core\handlers\exception.py", line 42, in inner
+    response = await get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\asgiref\sync.py", line 555, in thread_handler
+    raise exc_info[1]
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\core\handlers\base.py", line 253, in _get_response_async
+    response = await wrapped_callback(
+               ^^^^^^^^^^^^^^^^^^^^^^^
+        request, *callback_args, **callback_kwargs
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\asgiref\sync.py", line 504, in __call__
+    ret = await asyncio.shield(exec_coro)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\WindowsApps\PythonSoftwareFoundation.Python.3.13_3.13.2544.0_x64__qbz5n2kfra8p0\Lib\concurrent\futures\thread.py", line 59, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\asgiref\sync.py", line 559, in thread_handler
+    return func(*args, **kwargs)
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\views\generic\base.py", line 104, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\rest_framework\views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\rest_framework\views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\rest_framework\views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\rest_framework\views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "D:\codeconnect\backend_django\core\views.py", line 11, in post
+    class SignupView(generics.CreateAPIView):
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\query.py", line 677, in create
+    obj.save(force_insert=True, using=self.db)
+    ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\base.py", line 814, in save
+    self.save_base(
+    ~~~~~~~~~~~~~~^
+        using=using,
+        ^^^^^^^^^^^^
+    ...<2 lines>...
+        update_fields=update_fields,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\base.py", line 901, in save_base
+    updated = self._save_table(
+        raw,
+    ...<4 lines>...
+        update_fields,
+    )
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\base.py", line 1059, in _save_table
+    results = self._do_insert(
+        cls._base_manager, using, fields, returning_fields, raw
+    )
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\base.py", line 1100, in _do_insert
+    return manager._insert(
+           ~~~~~~~~~~~~~~~^
+        [self],
+        ^^^^^^^
+    ...<3 lines>...
+        raw=raw,
+        ^^^^^^^^
+    )
+    ^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\query.py", line 1845, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\models\sql\compiler.py", line 1822, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\thatr\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\site-packages\django\db\backends\sqlite3\base.py", line 328, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+django.db.utils.IntegrityError: NOT NULL constraint failed: rooms.is_public
+2026-01-07 08:44:02,183 User disconnected: 5RQEoVn5iaTj20LBAADF
+2026-01-07 08:44:02,184 User disconnected: sfKXLGyms7FqGBr7AADe
+2026-01-07 08:44:02,184 User disconnected: XmUACwjlGKqC7hPOAADj
+2026-01-07 08:44:02,185 User disconnected: yHeKJTC6hc_4Q8oxAADn
+2026-01-07 08:44:02,185 User disconnected: Jv1_tMxMnHFAPjjxAADw
+2026-01-07 08:44:08,262 DEBUG: User connected: dzxevdNvUUvEtYc-AAAB
+2026-01-07 08:44:08,399 DEBUG: User connected: KWwVglWBWEnT8WwAAAAD
+2026-01-07 09:04:27,905 DEBUG: User connected: _MZgckPR0N-pHDHfAAAG
+2026-01-07 09:04:27,907 DEBUG: User connected: wucHCiKdVg6fDLsiAAAH
+2026-01-07 09:04:27,985 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:04:28,009 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:04:28,011 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:04:28,023 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:04:48,056 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:04:48,085 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:04:48,312 DEBUG: User connected: cZ5_OM8j-XzjE0_aAAAK
+2026-01-07 09:04:48,313 DEBUG: User connected: 4-ux2Wsgq9-TGkMlAAAL
+2026-01-07 09:04:50,132 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:04:50,150 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:04:50,389 DEBUG: User connected: a2HFlmcfGvM-e69GAAAN
+2026-01-07 09:04:50,404 DEBUG: User connected: 2PMz8toCRu2_AAQAAAAP
+2026-01-07 09:04:51,788 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:04:51,810 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:04:52,045 DEBUG: User connected: KUbCXa1zdFRFuHPPAAAR
+2026-01-07 09:04:52,076 DEBUG: User connected: pgfzlMfar_SPqTjaAAAT
+2026-01-07 09:06:30,061 DEBUG: User connected: oteuXa0PKDC43F41AAAV
+2026-01-07 09:06:30,077 DEBUG: User connected: OOqaFiDGO4mp1UatAAAX
+2026-01-07 09:06:30,099 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:06:30,112 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:07:15,236 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:07:15,278 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:07:15,295 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:07:15,310 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:07:15,487 DEBUG: User connected: _G5PTVXTGHTdNkNzAAAZ
+2026-01-07 09:07:15,494 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:07:15,495 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:07:15,496 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:07:15,608 DEBUG: User connected: xlqiGKadecOq5RNcAAAb
+2026-01-07 09:08:49,424 DEBUG: User connected: pEiYuJOKRsAz_HNMAAAe
+2026-01-07 09:08:49,427 DEBUG: User connected: f2nIXQmOo-WXS3EHAAAf
+2026-01-07 09:08:49,431 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:08:49,434 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:08:49,435 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:08:49,468 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:08:49,480 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:09:23,727 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:09:23,778 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:09:23,796 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:09:23,814 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:09:23,835 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:09:23,877 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:09:24,011 DEBUG: User connected: TLzBo975M7XjccfZAAAh
+2026-01-07 09:09:24,020 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:09:24,022 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:09:24,022 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:09:45,878 User disconnected: KWwVglWBWEnT8WwAAAAD
+2026-01-07 09:09:45,879 User disconnected: _MZgckPR0N-pHDHfAAAG
+2026-01-07 09:09:45,879 User disconnected: pgfzlMfar_SPqTjaAAAT
+2026-01-07 09:09:45,879 User disconnected: OOqaFiDGO4mp1UatAAAX
+2026-01-07 09:09:45,879 User disconnected: pEiYuJOKRsAz_HNMAAAe
+2026-01-07 09:09:45,880 User disconnected: 4-ux2Wsgq9-TGkMlAAAL
+2026-01-07 09:09:45,880 User disconnected: 2PMz8toCRu2_AAQAAAAP
+2026-01-07 09:09:45,880 User disconnected: xlqiGKadecOq5RNcAAAb
+2026-01-07 09:09:46,475 DEBUG: User connected: pcQWCuPCimbfxN_2AAAj
+2026-01-07 09:09:46,557 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:09:46,586 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:09:46,593 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:09:46,608 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:10:04,018 User disconnected: pcQWCuPCimbfxN_2AAAj
+2026-01-07 09:10:04,261 DEBUG: User connected: pIUhG3QW0v8LQ7BpAAAl
+2026-01-07 09:10:05,845 Not Found: /api/rooms/88235215/code/
+2026-01-07 09:10:05,858 Not Found: /api/rooms/88235215/code/
+2026-01-07 09:10:05,910 Not Found: /api/rooms/88235215/metadata/
+2026-01-07 09:10:05,925 Not Found: /api/rooms/88235215/metadata/
+2026-01-07 09:12:05,682 DEBUG: User connected: HytKpl4Bbb6m3Vg4AAAo
+2026-01-07 09:12:05,685 DEBUG: User connected: bW4v-8uJfBhyAUT6AAAp
+2026-01-07 09:12:05,689 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:12:05,694 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:12:05,698 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:12:05,731 DEBUG: User connected: ShIEiCPHUTLrdwKlAAAr
+2026-01-07 09:12:05,746 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:12:05,752 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:12:05,762 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:12:05,801 Not Found: /api/rooms/88235215/code/
+2026-01-07 09:12:05,822 Not Found: /api/rooms/88235215/metadata/
+2026-01-07 09:12:05,930 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:12:05,990 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:12:05,991 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:12:06,037 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:15:15,453 DEBUG: User connected: jHW7h4_j0_S1rF0DAAAt
+2026-01-07 09:15:15,469 DEBUG: User connected: tEaqJHegSavxkJ90AAAv
+2026-01-07 09:15:15,471 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:15:15,474 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:15:15,475 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:15:15,492 DEBUG: User connected: 2MC4q_L1tAtAVn3jAAAx
+2026-01-07 09:15:15,523 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:15:15,537 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:15:15,590 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:15:15,616 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:15:15,642 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:15:15,946 Not Found: /api/rooms/88235215/code/
+2026-01-07 09:15:15,984 Not Found: /api/rooms/88235215/metadata/
+2026-01-07 09:15:30,675 User Guest-3636 (test) joining room 77508800
+2026-01-07 09:20:58,588 DEBUG: User connected: -tX58lS_RFfqpN-GAAAz
+2026-01-07 09:20:58,757 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:20:58,762 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:20:58,796 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:20:58,840 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:20:58,881 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:20:58,898 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:20:58,912 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:20:58,940 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:21:05,206 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:21:05,278 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:21:15,894 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:21:15,900 User Guest-3636 (testuser) joining room 77508800
+2026-01-07 09:21:15,953 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:21:15,987 Not Found: /api/rooms/77508800/code/
+2026-01-07 09:21:16,011 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:21:16,027 Not Found: /api/rooms/77508800/metadata/
+2026-01-07 09:23:18,794 Unauthorized: /api/upload
+2026-01-07 09:33:15,315 User disconnected: -tX58lS_RFfqpN-GAAAz
+2026-01-07 09:33:15,341 User disconnected: TLzBo975M7XjccfZAAAh
+2026-01-07 09:33:15,341 User disconnected: tEaqJHegSavxkJ90AAAv
+2026-01-07 09:33:15,341 User disconnected: ShIEiCPHUTLrdwKlAAAr
+2026-01-07 09:33:15,348 User disconnected: jHW7h4_j0_S1rF0DAAAt
+2026-01-07 09:33:15,351 User disconnected: cZ5_OM8j-XzjE0_aAAAK
+2026-01-07 09:33:15,352 User disconnected: f2nIXQmOo-WXS3EHAAAf
+2026-01-07 09:33:15,352 User disconnected: _G5PTVXTGHTdNkNzAAAZ
+2026-01-07 09:33:15,353 User disconnected: KUbCXa1zdFRFuHPPAAAR
+2026-01-07 09:33:15,354 User disconnected: wucHCiKdVg6fDLsiAAAH
+2026-01-07 09:33:15,355 User disconnected: a2HFlmcfGvM-e69GAAAN
+2026-01-07 09:33:15,355 User disconnected: dzxevdNvUUvEtYc-AAAB
+2026-01-07 09:33:15,355 User disconnected: bW4v-8uJfBhyAUT6AAAp
+2026-01-07 09:33:15,356 User disconnected: oteuXa0PKDC43F41AAAV
+2026-01-09 05:31:40,059 Bad Request: /api/ai/chat
+2026-01-09 05:52:38,713 D:\codeconnect\backend_django\core\views.py changed, reloading.
+2026-01-09 05:52:51,473 D:\codeconnect\backend_django\core\urls.py changed, reloading.
+2026-01-09 06:22:41,293 D:\codeconnect\backend_django\core\urls.py changed, reloading.
+2026-01-09 06:23:00,175 D:\codeconnect\backend_django\core\views.py changed, reloading.
+2026-01-09 06:31:05,706 D:\codeconnect\backend_django\core\views.py changed, reloading.
+2026-01-09 06:31:37,975 Not Found: /api/leaderboard
+2026-01-09 06:31:37,992 Not Found: /api/leaderboard
+2026-01-09 06:32:01,445 Not Found: /api/leaderboard
+2026-01-09 06:32:01,465 Not Found: /api/leaderboard
+2026-01-09 06:32:47,115 Not Found: /api/leaderboard
+2026-01-09 06:32:47,124 Not Found: /api/leaderboard
+2026-01-09 06:33:07,741 Not Found: /api/leaderboard
+2026-01-09 06:33:07,804 Not Found: /api/leaderboard
+2026-01-09 06:34:05,076 Not Found: /api/leaderboard
+2026-01-09 06:34:57,123 Not Found: /api/leaderboard
+2026-01-09 06:35:24,988 D:\codeconnect\backend_django\core\urls.py changed, reloading.
+2026-01-09 06:35:25,126 D:\codeconnect\backend_django\core\urls.py changed, reloading.
+2026-01-09 06:35:25,872 D:\codeconnect\backend_django\core\urls.py changed, reloading.
+2026-01-09 07:04:54,390 D:\codeconnect\backend_django\core\ai_service.py changed, reloading.
+2026-01-09 07:04:54,730 D:\codeconnect\backend_django\core\ai_service.py changed, reloading.
+2026-01-09 07:04:54,734 D:\codeconnect\backend_django\core\ai_service.py changed, reloading.
+2026-01-09 07:04:54,738 D:\codeconnect\backend_django\core\ai_service.py changed, reloading.
+2026-01-09 07:08:13,982 Unauthorized: /api/auth/login
+2026-01-09 07:08:30,564 Unauthorized: /api/auth/login
+2026-01-09 07:08:59,027 Bad Request: /api/auth/signup
