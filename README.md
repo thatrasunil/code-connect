@@ -162,6 +162,11 @@ const config = {
 - **Django CORS Headers** - CORS handling
 - **Google Generative AI** - Gemini AI integration
 
+### Google Services
+- **Google Gemini AI** - AI-powered code explanation and chat assistance
+- **Google Meet** - Integrated video conferencing for remote interviews
+- **Google Fonts** - Typography (Inter, Roboto, etc.)
+
 ### Performance Optimizations
 - **Code Splitting**: Route-based lazy loading with React.lazy
 - **React.memo**: Optimized re-renders for Chat, Interview, and Output panels
@@ -238,8 +243,9 @@ This project is licensed under the ISC License.
 
 ## 🙏 Acknowledgments
 
-- Monaco Editor by Microsoft
-- Google Gemini AI for intelligent code assistance
+- **Google Gemini AI** for intelligent code assistance and explanations
+- **Google Meet** for seamless video conferencing integration
+- **Monaco Editor** by Microsoft for the powerful code editor
 - React community for excellent tools and libraries
 - Framer Motion for beautiful animations
 
