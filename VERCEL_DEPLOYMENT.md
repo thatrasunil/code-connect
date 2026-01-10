@@ -50,9 +50,37 @@ Your app uses Socket.IO for real-time collaboration. You need to deploy `backend
    - **Start Command**: `node server.js`
 5. Add environment variables (same as above)
 
+
 ---
 
-## 🌐 Step 2: Deploy Frontend to Vercel
+## 🐍 Step 2: Deploy Django Backend (API & AI)
+
+Your app uses Django for AI features, Authentication, and Database access.
+
+### Recommended: Render (Free Tier)
+1. Go to [render.com](https://render.com)
+2. New → Web Service
+3. Connect your repo
+4. Configure:
+   - **Root Directory**: `backend_django`
+   - **Environment**: Python 3
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn codeconnect_backend.wsgi:application`
+5. **Environment Variables**:
+   | Key | Value |
+   |-----|-------|
+   | `PYTHON_VERSION` | `3.11.5` |
+   | `MONGODB_URI` | *Your connection string from .env* |
+   | `GEMINI_API_KEY` | *Your Groq/Gemini API Key* |
+   | `FIREBASE_API_KEY` | *From .env* |
+   | `DJANGO_SECRET_KEY` | *Generate a random string* |
+   | `ALLOWED_HOSTS` | `*` (or your frontend domain) |
+
+6. Copy the deployed URL (e.g., `https://code-connect-django.onrender.com`)
+
+---
+
+## 🌐 Step 3: Deploy Frontend to Vercel
 
 ### 2.1 Push Your Code to GitHub
 
@@ -84,8 +112,8 @@ In the Vercel project settings:
 
 | Variable Name | Value |
 |--------------|-------|
-| `REACT_APP_BACKEND_URL` | `http://localhost:8000` (or your deployed Django URL) |
-| `REACT_APP_SOCKET_URL` | Your Node.js backend URL from Step 1 |
+| `REACT_APP_BACKEND_URL` | Your Django Backend URL from Step 2 |
+| `REACT_APP_SOCKET_URL` | Your Node.js Backend URL from Step 1 |
 
 3. Click "Save"
 4. Redeploy: Go to **Deployments** → Click "..." on latest → "Redeploy"
