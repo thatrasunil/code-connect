@@ -12,9 +12,21 @@ class ErrorBoundary extends React.Component {
     }
 
     componentDidCatch(error, errorInfo) {
-        this.setState({ error, errorInfo });
-        console.error("Uncaught error:", error, errorInfo);
-        // Here you would log to a monitoring service (e.g., Sentry)
+        console.error("💥 Global Error Caught by Boundary:");
+        console.error("Error Object:", error);
+
+        if (typeof error === 'object') {
+            try {
+                console.error("JSON Stringify:", JSON.stringify(error, null, 2));
+            } catch (e) {
+                console.error("Could not stringify error");
+            }
+        }
+
+        this.setState({
+            error: error,
+            errorInfo: errorInfo
+        });
     }
 
     handleRetry = () => {

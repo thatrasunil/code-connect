@@ -250,10 +250,13 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
 
     // Filter messages based on active Tab
     const filteredMessages = messages.filter(msg => {
+        const isAIMessage = msg.userId === 'Gemini AI' || msg.type === 'AI_PENDING' || msg.type === 'AI_PROMPT' || msg.type === 'AI_RESPONSE';
+
         if (activeTab === 'team') {
-            return msg.userId !== 'Gemini AI' && msg.type !== 'AI_PENDING';
+            return !isAIMessage;
         }
-        return true; // Show all in AI tab (context)
+        // AI Tab
+        return isAIMessage;
     });
 
     return (

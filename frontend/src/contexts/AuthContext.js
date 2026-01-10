@@ -11,6 +11,13 @@ import {
 } from 'firebase/auth';
 import { auth } from '../firebase';
 import config from '../config';
+import {
+    initializeUserInFirestore,
+    updateUserPresence,
+    setUserOffline,
+    logTransaction
+} from '../services/firestoreService';
+
 
 const AuthContext = createContext();
 
@@ -29,7 +36,9 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for Firebase auth state changes
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUserData) => {
+        let presenceInterval;
+
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUserData) => {
             if (firebaseUserData) {
                 setFirebaseUser(firebaseUserData);
                 setUser({
@@ -41,13 +50,28 @@ export const AuthProvider = ({ children }) => {
                 });
                 setAuthMethod('firebase');
                 setLoading(false);
+
+                // Firestore Integration
+                initializeUserInFirestore(firebaseUserData);
+
+                // Start heartbeat
+                updateUserPresence(firebaseUserData.uid);
+                presenceInterval = setInterval(() => {
+                    updateUserPresence(firebaseUserData.uid);
+                }, 30000);
+
             } else {
+                if (presenceInterval) clearInterval(presenceInterval);
+
                 // Check for backend JWT auth if no Firebase user
                 checkBackendAuth();
             }
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            if (presenceInterval) clearInterval(presenceInterval);
+        };
     }, []);
 
     const checkBackendAuth = async () => {
@@ -56,7 +80,7 @@ export const AuthProvider = ({ children }) => {
             try {
                 const decoded = jwtDecode(token);
                 if (decoded.exp * 1000 < Date.now()) {
-                    logout();
+                    logout(); // This calls internal logout
                 } else {
                     await fetchUserProfile(token);
                     setAuthMethod('backend');
@@ -90,6 +114,7 @@ export const AuthProvider = ({ children }) => {
     const loginWithFirebase = async (email, password) => {
         try {
             const result = await signInWithEmailAndPassword(auth, email, password);
+            logTransaction(result.user.uid, 'USER_LOGIN', { method: 'password' });
             return { success: true, user: result.user };
         } catch (err) {
             return { success: false, error: err.message };
@@ -100,6 +125,7 @@ export const AuthProvider = ({ children }) => {
     const loginWithGoogle = async () => {
         try {
             const result = await signInWithPopup(auth, googleProvider);
+            logTransaction(result.user.uid, 'USER_LOGIN', { method: 'google' });
             return { success: true, user: result.user };
         } catch (err) {
             return { success: false, error: err.message };
@@ -114,6 +140,7 @@ export const AuthProvider = ({ children }) => {
             if (displayName) {
                 await updateProfile(result.user, { displayName });
             }
+            logTransaction(result.user.uid, 'USER_REGISTER', { method: 'password' });
             return { success: true, user: result.user };
         } catch (err) {
             return { success: false, error: err.message };
@@ -180,6 +207,11 @@ export const AuthProvider = ({ children }) => {
 
     // Universal Logout
     const logout = async () => {
+        // Set offline in Firestore if firebase user
+        if (firebaseUser?.uid) {
+            setUserOffline(firebaseUser.uid);
+        }
+
         // Clear backend tokens
         localStorage.removeItem('token');
         localStorage.removeItem('refresh');

@@ -344,9 +344,12 @@ class FileUploadView(APIView):
         from django.core.files.base import ContentFile
         
         path = default_storage.save(f"uploads/{file_obj.name}", ContentFile(file_obj.read()))
-        url = default_storage.url(path)
+        # Get relative URL and convert to absolute URL
+        relative_url = default_storage.url(path)
+        # Build absolute URL with request host
+        absolute_url = request.build_absolute_uri(relative_url)
         
-        return Response({'url': url, 'filename': file_obj.name})
+        return Response({'url': absolute_url, 'filename': file_obj.name})
 
 class RootView(APIView):
     def get(self, request):

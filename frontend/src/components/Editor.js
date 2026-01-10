@@ -11,11 +11,15 @@ import OutputPanel from './OutputPanel';
 import SettingsModal from './SettingsModal';
 import config from '../config';
 import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '../constants';
+import { incrementUserStats, logTransaction } from '../services/firestoreService';
 
 // Memoize sub-components to prevent re-renders on every keystroke
 const MemoizedInterviewPanel = React.memo(InterviewPanel);
 const MemoizedChatPanel = React.memo(ChatPanel);
 const MemoizedOutputPanel = React.memo(OutputPanel);
+
+
+
 
 const CodeEditor = () => {
     const { roomId } = useParams();
@@ -283,8 +287,18 @@ const CodeEditor = () => {
                 })
             });
 
+
+
             const data = await res.json();
+
             if (res.ok) {
+                if (user?.id) {
+                    logTransaction(user.id, 'CODE_EXECUTED', {
+                        language,
+                        success: true,
+                        roomId
+                    });
+                }
                 const runResult = data.results && data.results.length > 0 ? data.results[0] : null;
                 if (runResult) {
                     // ... (keep existing logic)
@@ -345,35 +359,43 @@ const CodeEditor = () => {
 
     const handleGoogleMeet = () => window.open('https://meet.google.com/new', '_blank');
 
-    const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null) => {
-        if (aiMode && type === 'TEXT') {
-            setMessages(prev => [...prev, { id: Date.now(), userId: 'Me', content: text, type: 'TEXT' }]);
-            handleAskAI(text);
-        } else {
-            try {
-                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: user?.username || 'Guest',
-                        content: text,
-                        type,
-                        fileUrl,
-                        parentId
-                    })
-                });
 
-                if (res.ok) {
-                    const newMsg = await res.json();
-                    setMessages(prev => [...prev, newMsg]);
+
+    const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null) => {
+        const finalType = aiMode ? 'AI_PROMPT' : type;
+
+        try {
+            const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: user?.username || 'Guest',
+                    content: text,
+                    type: finalType,
+                    fileUrl,
+                    parentId
+                })
+            });
+
+            if (res.ok) {
+                const newMsg = await res.json();
+                setMessages(prev => [...prev, newMsg]);
+
+                // Increment Firestore Stats (only for human messages)
+                if (user?.id && !aiMode && type === 'TEXT') {
+                    incrementUserStats(user.id, 'message');
                 }
-            } catch (err) { console.error("Failed to send message", err); }
-        }
+
+                if (aiMode && type === 'TEXT') {
+                    handleAskAI(text);
+                }
+            }
+        } catch (err) { console.error("Failed to send message", err); }
     };
 
     const handleAskAI = async (prompt) => {
         try {
-            setMessages(prev => [...prev, { id: Date.now() + 1, userId: 'AI (Thinking...)', content: 'Thinking...', type: 'AI_PENDING' }]);
+            setMessages(prev => [...prev, { id: Date.now() + 1, userId: 'Gemini AI', content: 'Thinking...', type: 'AI_PENDING' }]);
             const res = await fetch(`${config.BACKEND_URL}/api/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -381,9 +403,30 @@ const CodeEditor = () => {
             });
             if (!res.ok) throw new Error(`Server Error: ${res.status}`);
             const data = await res.json();
+
             setMessages(prev => prev.filter(m => m.type !== 'AI_PENDING'));
             const aiResponse = typeof data.response === 'object' ? JSON.stringify(data.response) : String(data.response || '');
-            setMessages(prev => [...prev, { id: Date.now() + 2, userId: 'Gemini AI', content: aiResponse, type: 'AI_RESPONSE' }]);
+
+            // Persist AI Response
+            await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: 'Gemini AI',
+                    content: aiResponse,
+                    type: 'AI_RESPONSE',
+                })
+            });
+
+            // Optimistic update (though poll will catch it too)
+            setMessages(prev => [...prev, {
+                id: Date.now() + 2,
+                userId: 'Gemini AI',
+                content: aiResponse,
+                type: 'AI_RESPONSE',
+                timestamp: new Date().toISOString()
+            }]);
+
         } catch (err) {
             setMessages(prev => prev.filter(m => m.type !== 'AI_PENDING'));
             setMessages(prev => [...prev, { id: Date.now() + 3, userId: 'System', content: `Error: ${err.message}`, type: 'TEXT' }]);

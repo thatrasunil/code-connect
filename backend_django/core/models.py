@@ -59,6 +59,7 @@ class Question(models.Model):
     output_format = models.TextField(blank=True, default="")
     constraints = models.TextField(blank=True, default="")
     example_cases = models.TextField(blank=True, default="") # JSON or string representation
+    image_url = models.CharField(max_length=500, blank=True, null=True) # Optional image for the question
     
     class Meta:
         db_table = 'questions'

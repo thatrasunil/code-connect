@@ -121,18 +121,35 @@ codeconnect/
 
 ### Environment Variables
 
-**Backend (.env in backend_django/)**
+**Backend Django (.env in backend_django/)**
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 DEBUG=True
 SECRET_KEY=your_django_secret_key
 ```
 
+**Backend Node.js (.env in root or backend/)**
+```env
+FIREBASE_SERVICE_ACCOUNT=<your-firebase-service-account-json>
+GOOGLE_API_KEY=<your-gemini-api-key>
+FRONTEND_URL=http://localhost:3000
+PORT=3001
+```
+
+**Frontend (.env.development in frontend/)**
+```env
+REACT_APP_BACKEND_URL=http://localhost:8000
+REACT_APP_SOCKET_URL=http://localhost:3001
+```
+
+> [!NOTE]
+> For production deployment to Vercel, see [Vercel Deployment Guide](./VERCEL_DEPLOYMENT.md)
+
 **Frontend (config.js)**
 ```javascript
 const config = {
-    BACKEND_URL: 'http://localhost:8001',
-    SOCKET_URL: 'http://localhost:8001',
+    BACKEND_URL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000',
+    SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001',
 };
 ```
 

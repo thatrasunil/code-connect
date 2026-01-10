@@ -1,28 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import config from '../config';
 import { motion } from 'framer-motion';
 import { FaTrophy, FaMedal, FaStar } from 'react-icons/fa';
+import { subscribeToLeaderboard } from '../services/firestoreService';
 
 const Leaderboard = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchLeaderboard = async () => {
-            try {
-                const res = await fetch(`${config.BACKEND_URL}/api/leaderboard`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setUsers(data);
-                }
-            } catch (err) {
-                console.error("Failed to fetch leaderboard", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+        const unsubscribe = subscribeToLeaderboard((firestoreUsers) => {
+            const mappedUsers = firestoreUsers.map(u => ({
+                username: u.displayName || u.email?.split('@')[0] || 'Anonymous',
+                avatar: u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName || 'User'}`,
+                rooms: u.rooms || 0,
+                messages: u.messages || 0,
+                points: u.points || 0
+            }));
+            setUsers(mappedUsers);
+            setLoading(false);
+        });
 
-        fetchLeaderboard();
+        return () => unsubscribe();
     }, []);
 
     const getRankIcon = (index) => {

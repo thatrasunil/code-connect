@@ -9,6 +9,9 @@ class QuestionListView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        # Ensure default questions exist
+        self._populate_mock_questions()
+
         difficulty = request.query_params.get('difficulty')
         topic = request.query_params.get('topic')
         
@@ -29,11 +32,6 @@ class QuestionListView(APIView):
                 'topic': q.topic
             })
             
-        # If empty (first run), populate mock data
-        if not data:
-            self._populate_mock_questions()
-            return self.get(request)
-            
         return Response(data)
 
     def _populate_mock_questions(self):
@@ -42,10 +40,12 @@ class QuestionListView(APIView):
             {'title': 'Reverse Linked List', 'difficulty': 'Easy', 'content': 'Given the head of a singly linked list, reverse the list, and return the reversed list.', 'topic': 'LinkedList'},
             {'title': 'LRU Cache', 'difficulty': 'Medium', 'content': 'Design a data structure that follows the constraints of a Least Recently Used (LRU) cache.', 'topic': 'Design'},
             {'title': 'Merge Intervals', 'difficulty': 'Medium', 'content': 'Given an array of intervals where intervals[i] = [start, end], merge all overlapping intervals.', 'topic': 'Array'},
-            {'title': 'Valid Parentheses', 'difficulty': 'Easy', 'content': 'Given a string s containing just the characters (, ), {, }, [ and ], determine if the input string is valid.', 'topic': 'Stack'}
+            {'title': 'Valid Parentheses', 'difficulty': 'Easy', 'content': 'Given a string s containing just the characters (, ), {, }, [ and ], determine if the input string is valid.', 'topic': 'Stack'},
+            {'title': 'Set Matrix Zeroes', 'difficulty': 'Medium', 'content': 'If an element is zero, set its entire row and column to zero in-place.', 'topic': 'Matrix'},
+            {'title': 'Reverse Words in a String', 'difficulty': 'Medium', 'content': 'Trim spaces and reverse the order of words in-place.', 'topic': 'String'}
         ]
         for mq in mock_qs:
-            Question.objects.create(**mq)
+            Question.objects.get_or_create(title=mq['title'], defaults=mq)
 
 class InterviewSessionView(APIView):
     permission_classes = [permissions.AllowAny] # In prod, should be IsAuthenticated

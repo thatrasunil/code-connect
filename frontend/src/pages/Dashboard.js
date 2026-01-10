@@ -4,8 +4,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaPlus, FaLaptopCode, FaChartPie, FaHistory, FaProjectDiagram, FaTrophy, FaCode, FaBrain, FaArrowRight } from 'react-icons/fa';
 import RoomChoiceModal from '../components/RoomChoiceModal';
+import OnlineUsersModal from '../components/OnlineUsersModal';
 
 import config from '../config';
+
+import { incrementUserStats, logTransaction, subscribeToOnlineUsers } from '../services/firestoreService';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -16,7 +19,11 @@ const Dashboard = () => {
     const [leaderboard, setLeaderboard] = useState([]);
     const [activeTab, setActiveTab] = useState('rooms'); // 'rooms' or 'interviews'
     const [loading, setLoading] = useState(true);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [isOnlineUsersModalOpen, setIsOnlineUsersModalOpen] = useState(false);
 
     // Dynamic backend URL
     const BACKEND_URL = config.BACKEND_URL;
@@ -53,6 +60,16 @@ const Dashboard = () => {
         if (user) fetchData();
     }, [user, BACKEND_URL]);
 
+    // Subscribe to online users
+    useEffect(() => {
+        const unsubscribe = subscribeToOnlineUsers((users) => {
+            setOnlineUsers(users);
+        });
+        return () => unsubscribe();
+    }, []);
+
+
+
     const handleCreateRoom = async (options = {}) => {
         try {
             const token = localStorage.getItem('token');
@@ -68,6 +85,11 @@ const Dashboard = () => {
             });
             const data = await res.json();
             if (data.roomId) {
+                // Increment Firestore stats
+                if (user?.id) {
+                    incrementUserStats(user.id, 'room');
+                    logTransaction(user.id, 'ROOM_CREATED', { roomId: data.roomId });
+                }
                 navigate(`/room/${data.roomId}`);
             }
         } catch (err) {
@@ -130,7 +152,12 @@ const Dashboard = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 <StatsCard icon={<FaLaptopCode />} title="Total Sessions" value={stats.totalSessions} color="#8b5cf6" delay={0.1} />
                 <StatsCard icon={<FaProjectDiagram />} title="Active Projects" value={stats.roomsCreated} color="#06b6d4" delay={0.2} />
+
+
                 <StatsCard icon={<FaChartPie />} title="Languages" value={stats.languagesUsed?.length || 0} color="#ec4899" delay={0.3} />
+                <div onClick={() => setIsOnlineUsersModalOpen(true)} style={{ cursor: 'pointer' }}>
+                    <StatsCard icon={<FaBrain />} title="Online Users" value={onlineUsers.length} color="#10b981" delay={0.4} />
+                </div>
             </div>
 
             {/* Main Content Area */}
@@ -314,6 +341,13 @@ const Dashboard = () => {
                 onClose={() => setIsModalOpen(false)}
                 onCreate={handleCreateRoom}
                 onJoin={handleJoinRoom}
+
+            />
+
+            <OnlineUsersModal
+                isOpen={isOnlineUsersModalOpen}
+                onClose={() => setIsOnlineUsersModalOpen(false)}
+                users={onlineUsers}
             />
         </div>
     );

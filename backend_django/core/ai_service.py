@@ -4,7 +4,9 @@ import json
 from django.conf import settings
 
 # Configure API Key
-API_KEY = os.getenv("GEMINI_API_KEY", os.getenv("GOOGLE_API_KEY", "")) 
+# Configure API Key
+API_KEY = os.getenv("GEMINI_API_KEY") 
+# Previously: os.getenv("GEMINI_API_KEY", ...) - Caused 401 if invalid env var existed
 
 class GeminiService:
     """
@@ -14,7 +16,7 @@ class GeminiService:
     def __init__(self):
         self.api_key = API_KEY
         self.api_url = "https://api.groq.com/openai/v1/chat/completions"
-        self.model = "llama-3.3-70b-versatile" # Using Llama 3.3 70B via Groq
+        self.model = "llama-3.3-70b-versatile" # "llama3-70b-8192" was decommissioned
 
     def _call_groq(self, messages):
         if not self.api_key:
@@ -39,9 +41,13 @@ class GeminiService:
             return data['choices'][0]['message']['content']
         except requests.exceptions.HTTPError as e:
             error_msg = f"API Error: {e.response.status_code} - {e.response.text}"
+            with open("ai_debug.log", "a") as f:
+                f.write(f"{error_msg}\n")
             print(error_msg)
-            return "I am having trouble connecting to the AI service right now. Please try again later."
+            return f"I am having trouble connecting to the AI service right now. (Status: {e.response.status_code})"
         except Exception as e:
+            with open("ai_debug.log", "a") as f:
+                f.write(f"Exception: {str(e)}\n")
             print(f"Groq API Exception: {e}")
             return f"An error occurred: {str(e)}"
 
