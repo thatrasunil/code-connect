@@ -176,6 +176,61 @@ app.post('/api/ai/explain', async (req, res) => {
   }
 });
 
+// --- Code Execution (Piston API Proxy) ---
+app.post('/api/execute', async (req, res) => {
+  const { code, language } = req.body;
+
+  // Map frontend languages to Piston languages
+  const languageMap = {
+    'javascript': 'javascript',
+    'python': 'python',
+    'java': 'java',
+    'cpp': 'cpp',
+    'c': 'c',
+    'go': 'go',
+    'rust': 'rust',
+    'typescript': 'typescript'
+  };
+
+  const pistonLang = languageMap[language] || language;
+
+  try {
+    const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        language: pistonLang,
+        version: '*', // Use latest available
+        files: [
+          {
+            content: code
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Transform Piston output to match our frontend expectation
+      // Frontend expects: { results: [ { actual: "output string", error: "error string" } ] }
+      const result = {
+        actual: data.run.stdout,
+        error: data.run.stderr
+      };
+      res.json({ results: [result] });
+    } else {
+      console.error('Piston API Error:', data);
+      res.status(response.status).json({ error: data.message || 'Execution failed' });
+    }
+  } catch (error) {
+    console.error('Execution Server Error:', error);
+    res.status(500).json({ error: 'Failed to connect to execution service' });
+  }
+});
+
 // --- Socket.IO Events ---
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);

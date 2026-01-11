@@ -178,7 +178,7 @@ const Dashboard = () => {
                                 </div>
                             </div>
                         </Link>
-                        <button onClick={handleCreateRoom} className="glass-card" style={{ padding: '2rem', textDecoration: 'none', color: 'white', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden', cursor: 'pointer', textAlign: 'left', background: 'none' }}>
+                        <button onClick={() => handleCreateRoom()} className="glass-card" style={{ padding: '2rem', textDecoration: 'none', color: 'white', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden', cursor: 'pointer', textAlign: 'left', background: 'none' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#8b5cf6' }}></div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                                 <div style={{ background: 'rgba(139, 92, 246, 0.2)', padding: '1rem', borderRadius: '16px', color: '#8b5cf6' }}><FaLaptopCode size={24} /></div>
