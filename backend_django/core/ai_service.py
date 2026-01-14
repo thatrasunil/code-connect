@@ -5,8 +5,9 @@ from django.conf import settings
 
 # Configure API Key
 # Configure API Key
-API_KEY = os.getenv("GEMINI_API_KEY") 
-# Previously: os.getenv("GEMINI_API_KEY", ...) - Caused 401 if invalid env var existed
+API_KEY = os.getenv("GROQ_API_KEY") or os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    print("WARNING: GROQ_API_KEY or GEMINI_API_KEY not found in environment variables.")
 
 class GeminiService:
     """
@@ -20,7 +21,9 @@ class GeminiService:
 
     def _call_groq(self, messages):
         if not self.api_key:
-            return "Error: API Key is missing."
+            error_msg = "Error: API Key is missing. Please set GROQ_API_KEY in environment variables."
+            print(error_msg)
+            return error_msg
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -35,21 +38,44 @@ class GeminiService:
         }
 
         try:
-            response = requests.post(self.api_url, headers=headers, json=payload)
+            print(f"[AI Service] Calling Groq API with model: {self.model}")
+            response = requests.post(self.api_url, headers=headers, json=payload, timeout=30)
             response.raise_for_status()
             data = response.json()
+            print(f"[AI Service] Successfully received response from Groq API")
             return data['choices'][0]['message']['content']
+        except requests.exceptions.Timeout:
+            error_msg = "Request timeout: The AI service took too long to respond."
+            print(f"[AI Service] {error_msg}")
+            with open("ai_debug.log", "a") as f:
+                f.write(f"Timeout Error\n")
+            return error_msg
         except requests.exceptions.HTTPError as e:
             error_msg = f"API Error: {e.response.status_code} - {e.response.text}"
             with open("ai_debug.log", "a") as f:
                 f.write(f"{error_msg}\n")
-            print(error_msg)
+            print(f"[AI Service] {error_msg}")
+            
+            if e.response.status_code == 401:
+                return "Error: Authentication failed. The API key may be invalid or expired."
+            elif e.response.status_code == 429:
+                return "Error: Rate limit exceeded. Please try again in a moment."
+            elif e.response.status_code == 500:
+                return "Error: The AI service is experiencing issues. Please try again later."
+            
             return f"I am having trouble connecting to the AI service right now. (Status: {e.response.status_code})"
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Network Error: {str(e)}"
             with open("ai_debug.log", "a") as f:
-                f.write(f"Exception: {str(e)}\n")
-            print(f"Groq API Exception: {e}")
-            return f"An error occurred: {str(e)}"
+                f.write(f"{error_msg}\n")
+            print(f"[AI Service] {error_msg}")
+            return "Error: Unable to connect to the AI service. Please check your internet connection."
+        except Exception as e:
+            error_msg = f"Unexpected Exception: {str(e)}"
+            with open("ai_debug.log", "a") as f:
+                f.write(f"{error_msg}\n")
+            print(f"[AI Service] {error_msg}")
+            return f"An unexpected error occurred: {str(e)}"
 
     def chat_with_ai(self, prompt, context=""):
         """

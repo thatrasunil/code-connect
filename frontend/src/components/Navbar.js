@@ -32,6 +32,11 @@ const Navbar = () => {
                         <Link to="/dashboard" style={{ color: location.pathname === '/dashboard' ? 'white' : '#94a3b8', textDecoration: 'none', fontWeight: location.pathname === '/dashboard' ? '600' : '400' }}>Dashboard</Link>
                         <Link to="/problems" style={{ color: location.pathname === '/problems' ? 'white' : '#94a3b8', textDecoration: 'none', fontWeight: location.pathname === '/problems' ? '600' : '400' }}>Problems</Link>
                         <Link to="/leaderboard" style={{ color: location.pathname === '/leaderboard' ? 'white' : '#94a3b8', textDecoration: 'none', fontWeight: location.pathname === '/leaderboard' ? '600' : '400' }}>Leaderboard</Link>
+                        <div style={{ width: '1px', height: '20px', background: '#334155', margin: '0 0.5rem' }}></div>
+                        {/* New Features */}
+                        <Link to="/debugging" style={{ color: location.pathname === '/debugging' ? 'white' : '#94a3b8', textDecoration: 'none', fontSize: '0.9rem' }}>Debugging</Link>
+                        <Link to="/testing" style={{ color: location.pathname === '/testing' ? 'white' : '#94a3b8', textDecoration: 'none', fontSize: '0.9rem' }}>Testing</Link>
+                        <Link to="/codegen" style={{ color: location.pathname === '/codegen' ? 'white' : '#94a3b8', textDecoration: 'none', fontSize: '0.9rem' }}>Code Gen</Link>
                     </div>
                 )}
             </div>

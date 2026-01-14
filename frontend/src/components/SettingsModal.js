@@ -87,6 +87,45 @@ const SettingsModal = ({ isOpen, onClose, settings, onSettingsChange }) => {
                                 <option value="8">8 Spaces</option>
                             </select>
                         </div>
+                        {/* Minimap */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label>Minimap</label>
+                            <label className="switch">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.minimap !== false}
+                                    onChange={(e) => onSettingsChange({ ...settings, minimap: e.target.checked })}
+                                />
+                                <span className="slider round"></span>
+                            </label>
+                        </div>
+
+                        {/* Bracket Pair Colorization */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label>Bracket Colorization</label>
+                            <label className="switch">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.bracketPairColorization !== false}
+                                    onChange={(e) => onSettingsChange({ ...settings, bracketPairColorization: e.target.checked })}
+                                />
+                                <span className="slider round"></span>
+                            </label>
+                        </div>
+
+                        {/* Font Family */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <label>Font Family</label>
+                            <select
+                                value={settings.fontFamily}
+                                onChange={(e) => onSettingsChange({ ...settings, fontFamily: e.target.value })}
+                                style={{ background: '#0f172a', border: '1px solid #475569', color: 'white', padding: '5px', borderRadius: '5px', maxWidth: '150px' }}
+                            >
+                                <option value="'Fira Code', 'JetBrains Mono', Consolas, monospace">Fira Code</option>
+                                <option value="'Courier New', Courier, monospace">Courier New</option>
+                                <option value="'Segoe UI', Tahoma, Geneva, Verdana, sans-serif">Segoe UI</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div style={{ marginTop: '20px', textAlign: 'right' }}>

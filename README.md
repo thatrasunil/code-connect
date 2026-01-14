@@ -1,45 +1,64 @@
 # CodeConnect 🚀
 
-A **Real-Time Collaborative Coding Interview Platform** with integrated AI assistance, chat, video conferencing, and problem libraries. Built with React, Django, and modern web technologies.
+A **Real-Time Collaborative Coding Platform** with integrated AI assistance, problem-solving tools, and advanced debugging features. Built with React, Node.js, Firebase, and powered by Google Gemini AI.
 
-![CodeConnect](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![CodeConnect](https://img.shields.io/badge/version-3.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-ISC-green.svg)
-![Python](https://img.shields.io/badge/python-3.11-brightgreen.svg)
 ![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
+![Firebase](https://img.shields.io/badge/firebase-11.2.0-orange.svg)
 
 ## ✨ Features
 
 ### 🎯 Core Functionality
-- **Real-time Collaborative Editing**: Multiple users can edit code simultaneously with Monaco Editor
-- **Multi-language Support**: Syntax highlighting for JavaScript, Python, Java, C++, and more
-- **Room Management**: Unique room IDs for easy collaboration
-- **Session Persistence**: Auto-save functionality with localStorage backup (every 5 seconds)
-- **Code Execution**: Run JavaScript code directly in the browser
+- **Real-Time Collaborative Editing**: Multiple users can code simultaneously with Monaco Editor
+- **Multi-Language Support**: JavaScript, Python, Java, C++, and more with intelligent syntax highlighting
+- **Room Management**: Unique 6-digit room IDs for easy collaboration
+- **Session Persistence**: Auto-save with Firestore real-time sync
+- **Cloud Code Execution**: Run code in a secure backend environment
 
-### 🤖 AI-Powered Features
-- **AI Code Explanation**: Get instant explanations of code snippets using Gemini AI
-- **AI Chat Assistant**: Integrated chatbot for coding help and guidance
-- **Context-Aware Responses**: AI understands your current code context
+### 🤖 AI-Powered Advanced Tools
+- **AI Code Generator**: Transform natural language prompts into production-ready code
+- **Intelligent Debugger**: Automated code analysis with detailed issue detection and suggested fixes
+- **AI Test Runner**: Generate, execute, and validate test cases with AI-powered evaluation
+- **AI Chat Assistant**: Context-aware coding help integrated directly into the editor
+- **Code Explanation**: Get instant, detailed explanations of complex code snippets
 
 ### 💬 Communication & Collaboration
-- **Real-time Chat**: Text messaging with file sharing and voice notes
-- **Typing Indicators**: See when collaborators are actively typing
-- **Video Conferencing**: Integrated Google Meet support
-- **Google Drive Export**: Export code directly to Google Drive for cloud storage
-- **Problem Library**: LeetCode-style interview questions with timer
+- **Real-Time Chat System**: Text messaging with AI mode toggle for intelligent assistance
+- **Typing Indicators**: Live visibility of collaborators actively coding
+- **Presence System**: Real-time tracking of online users and room participants
+- **Google Meet Integration**: One-click video conferencing for remote pair programming
+- **Google Drive Export**: Seamlessly save and share code to Google Drive cloud storage
+- **File Sharing**: Share code snippets and files within chat conversations
+
+### 📚 Learning & Practice
+- **Comprehensive Problem Library**: 20+ curated coding challenges organized by difficulty
+  - **Beginner**: Arrays, strings, basic algorithms (Two Sum, Palindrome, etc.)
+  - **Intermediate**: Linked lists, trees, dynamic programming (LRU Cache, Word Break)
+  - **Advanced**: Complex algorithms, system design (Median of Two Sorted Arrays, N-Queens)
+- **Problem Solver Mode**: Dedicated coding interface with integrated problem descriptions
+- **Real-Time Leaderboard**: Gamified learning with points, rankings, and progress tracking
+- **Progress Dashboard**: Monitor sessions, active projects, languages used, and achievements
+
+### 🔥 Firebase & Google Cloud Integration
+- **Firebase Authentication**: Secure Google OAuth login with session management
+- **Cloud Firestore**: Real-time NoSQL database for instant data synchronization
+- **Firebase Analytics**: Track user engagement and platform usage
+- **Google Meet**: Integrated video conferencing
+- **Google Drive**: Cloud storage and code export functionality
 
 ### 🎨 User Experience
-- **Modern UI**: Clean, glassmorphic design with smooth animations (Framer Motion)
-- **Error Handling**: Global error boundaries with user-friendly toast notifications
-- **Performance Optimized**: Code splitting, lazy loading, and React.memo optimizations
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Modern 3D UI**: Stunning glassmorphic design with Three.js 3D elements
+- **Fully Responsive**: Optimized for desktop, tablet, and mobile devices
 - **Dark Theme**: Eye-friendly dark mode for extended coding sessions
+- **Smooth Animations**: Framer Motion for fluid transitions and interactions
+- **Toast Notifications**: Non-intrusive feedback system
 
 ### 🔐 Security & Reliability
+- **Firebase Authentication**: Secure Google OAuth login
+- **Firestore Real-Time Database**: Scalable, real-time data synchronization
 - **Protected Routes**: Authentication-based access control
 - **Error Boundaries**: Graceful error handling prevents app crashes
-- **Toast Notifications**: Non-intrusive user feedback system
-- **CORS Protection**: Configured allowed origins
 
 ## 🏗️ Architecture
 
@@ -47,20 +66,32 @@ A **Real-Time Collaborative Coding Interview Platform** with integrated AI assis
 codeconnect/
 ├── frontend/                 # React application
 │   ├── src/
-│   │   ├── components/      # UI components (Editor, Chat, AI, etc.)
+│   │   ├── components/      # UI components
+│   │   │   ├── Editor.js    # Monaco editor with real-time sync
+│   │   │   ├── ChatPanel.js # Chat with AI integration
+│   │   │   ├── ProblemPanel.js # Problem descriptions
+│   │   │   ├── Landing.js   # 3D landing page
+│   │   │   └── Three/       # 3D components (React Three Fiber)
 │   │   ├── contexts/        # React contexts (Auth, Toast)
-│   │   ├── pages/           # Main pages (Dashboard, Login, etc.)
-│   │   └── App.js           # Root component with ErrorBoundary
+│   │   ├── pages/           # Main pages
+│   │   │   ├── Dashboard.js # User dashboard
+│   │   │   ├── Problems.js  # Problem library
+│   │   │   ├── CodeGen.js   # AI code generator
+│   │   │   ├── Debugging.js # AI debugger
+│   │   │   └── Testing.js   # AI test runner
+│   │   ├── services/        # API services
+│   │   │   ├── firestoreService.js # Firestore operations
+│   │   │   └── problemService.js   # Problem API
+│   │   └── firebase.js      # Firebase configuration
 │   └── package.json
 │
-├── backend_django/          # Django REST API
-│   ├── core/                # Main app
-│   │   ├── models.py        # Database models
-│   │   ├── views.py         # API endpoints
-│   │   ├── views_ai.py      # AI integration
-│   │   └── urls.py          # URL routing
-│   ├── codeconnect_backend/ # Project settings
-│   └── manage.py
+├── backend/                  # Node.js backend
+│   ├── routes/              # API routes
+│   │   ├── ai.js            # Groq AI integration
+│   │   ├── execute.js       # Code execution
+│   │   └── problems.js      # Problem management
+│   ├── server.js            # Express server
+│   └── package.json
 │
 └── README.md
 ```
@@ -68,9 +99,9 @@ codeconnect/
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Python** 3.11 or higher
 - **Node.js** 18.x or higher
 - **npm** or yarn
+- **Firebase Project** (for authentication and database)
 - **Google Gemini API Key** (for AI features)
 
 ### Installation
@@ -81,25 +112,22 @@ codeconnect/
    cd codeconnect
    ```
 
-2. **Backend Setup (Django)**
+2. **Backend Setup (Node.js)**
    ```bash
-   cd backend_django
-   
-   # Create virtual environment
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   cd backend
    
    # Install dependencies
-   pip install -r requirements.txt
+   npm install
    
    # Create .env file
-   echo "GEMINI_API_KEY=your_api_key_here" > .env
+   cat > .env << EOF
+   GOOGLE_API_KEY=your_google_gemini_api_key_here
+   FRONTEND_URL=http://localhost:3000
+   PORT=3001
+   EOF
    
-   # Run migrations
-   python manage.py migrate
-   
-   # Start Django server
-   python manage.py runserver 8001
+   # Start backend server
+   npm run dev
    ```
 
 3. **Frontend Setup (React)**
@@ -109,47 +137,45 @@ codeconnect/
    # Install dependencies
    npm install
    
+   # Configure Firebase
+   # Update src/firebase.js with your Firebase config
+   
    # Start development server
    npm start
    ```
 
 4. **Access the Application**
    - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8001
+   - Backend API: http://localhost:3001
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
-**Backend Django (.env in backend_django/)**
+**Backend (.env in backend/)**
 ```env
-GEMINI_API_KEY=your_gemini_api_key_here
-DEBUG=True
-SECRET_KEY=your_django_secret_key
-```
-
-**Backend Node.js (.env in root or backend/)**
-```env
-FIREBASE_SERVICE_ACCOUNT=<your-firebase-service-account-json>
-GOOGLE_API_KEY=<your-gemini-api-key>
+GOOGLE_API_KEY=your_google_gemini_api_key_here
 FRONTEND_URL=http://localhost:3000
 PORT=3001
 ```
 
-**Frontend (.env.development in frontend/)**
-```env
-REACT_APP_BACKEND_URL=http://localhost:8000
-REACT_APP_SOCKET_URL=http://localhost:3001
+**Frontend (src/firebase.js)**
+```javascript
+const firebaseConfig = {
+  apiKey: "your_firebase_api_key",
+  authDomain: "your_project.firebaseapp.com",
+  projectId: "your_project_id",
+  storageBucket: "your_project.appspot.com",
+  messagingSenderId: "your_sender_id",
+  appId: "your_app_id",
+  measurementId: "your_measurement_id"
+};
 ```
 
-> [!NOTE]
-> For production deployment to Vercel, see [Vercel Deployment Guide](./VERCEL_DEPLOYMENT.md)
-
-**Frontend (config.js)**
+**Frontend (src/config.js)**
 ```javascript
 const config = {
-    BACKEND_URL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000',
-    SOCKET_URL: process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001',
+    BACKEND_URL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:3001',
 };
 ```
 
@@ -161,77 +187,92 @@ const config = {
 - `npm test` - Run tests
 
 **Backend**
-- `python manage.py runserver 8001` - Start Django server
-- `python manage.py migrate` - Run database migrations
-- `python manage.py createsuperuser` - Create admin user
+- `npm run dev` - Start development server with nodemon
+- `npm start` - Start production server
 
 ## 📚 Tech Stack
 
 ### Frontend Technologies
-- **React** 18.2.0 - UI framework with hooks and functional components
-- **React Router DOM** 7.9.2 - Client-side routing and navigation
-- **Monaco Editor** 4.7.0 - VS Code's powerful code editor engine
-- **Framer Motion** 12.24.12 - Smooth animations and transitions
-- **React Icons** 5.5.0 - Comprehensive icon library
-- **Socket.IO Client** 4.8.3 - Real-time bidirectional communication
-- **JWT Decode** 4.0.0 - JSON Web Token decoding for authentication
-- **React Scripts** 5.0.1 - Create React App build tooling
-- **Web Vitals** 2.1.4 - Performance metrics tracking
+- **React** 18.2.0 - UI framework with hooks
+- **React Router DOM** 7.9.2 - Client-side routing
+- **Monaco Editor** 4.7.0 - VS Code's code editor
+- **React Three Fiber** 8.18.7 - 3D graphics with Three.js
+- **@react-three/drei** 9.122.7 - 3D helpers and components
+- **Framer Motion** 12.24.12 - Animation library
+- **Firebase** 11.2.0 - Authentication and real-time database
+- **React Icons** 5.5.0 - Icon library
+- **React Markdown** 9.0.5 - Markdown rendering
 
 ### Backend Technologies
-- **Django** 5.x - High-level Python web framework
-- **Django REST Framework** - Powerful toolkit for building Web APIs
-- **Django CORS Headers** - Cross-Origin Resource Sharing handling
-- **Python** 3.11+ - Core programming language
-- **Google Generative AI** (google-generativeai) - Gemini AI SDK for Python
+- **Node.js** - JavaScript runtime
+- **Express** - Web framework
+- **Google Generative AI SDK** - AI integration for code generation and analysis
+- **CORS** - Cross-origin resource sharing
+- **dotenv** - Environment variable management
 
-### Google Services Integration
-- **Google Gemini AI** - AI-powered code explanation and intelligent chat assistance
-- **Google Meet** - Integrated video conferencing for remote pair programming
-- **Google Drive** - Code export functionality for cloud storage
-- **Google Fonts** - Modern typography (Inter, Roboto, Outfit)
+### Firebase Services
+- **Firebase Authentication** - Google OAuth login
+- **Cloud Firestore** - Real-time NoSQL database
+- **Firebase Analytics** - Usage tracking and insights
 
-### Development & Testing
-- **Testing Library** (@testing-library/react, jest-dom, user-event) - Component testing
-- **ESLint** - Code quality and style enforcement
-- **React App Testing** - Built-in Jest configuration
-
-### Performance Optimizations
-- **Code Splitting**: Route-based lazy loading with React.lazy
-- **React.memo**: Optimized re-renders for Chat, Interview, and Output panels
-- **Auto-save**: Debounced localStorage backup every 5 seconds
+### AI Integration
+- **Google Gemini AI** - Advanced AI for code generation, debugging, testing, and intelligent chat assistance
 
 ## 🎮 Usage
 
 ### Creating a Room
-1. Navigate to the home page
-2. Click "Create Room" or "Join Room"
-3. Share the room URL with collaborators
+1. Navigate to the Dashboard
+2. Click "New Session" to create a room
+3. Share the 6-digit room ID with collaborators
 
-### Using AI Features
-1. Click the "AI ON" toggle in the chat panel
-2. Ask questions or request code explanations
-3. Use the "Explain" button to analyze selected code
+### Solving Problems
+1. Go to the "Problems" page
+2. Browse problems by difficulty (Beginner, Intermediate, Advanced)
+3. Click "Solve Now" to open the problem in the editor
+4. The problem description appears automatically in the left panel
 
-### Interview Mode
-1. Open the Interview Panel (left sidebar)
-2. Browse and select coding problems
-3. Use the built-in timer to track progress
-4. Post questions directly to the editor
+### Using AI Tools
 
-## 🆕 Recent Updates (v2.0.0)
+**Code Generator**
+1. Navigate to `/codegen`
+2. Enter a natural language prompt
+3. Click "Generate" to create code
 
-### Phase 1.1: Critical Fixes ✅
-- ✅ Global error boundaries with fallback UI
-- ✅ Toast notification system (replaced alerts)
-- ✅ Session persistence with auto-save
-- ✅ localStorage backup for code
+**Debugger**
+1. Navigate to `/debugging`
+2. Paste your code
+3. Click "Analyze Code" for AI-powered debugging
 
-### Phase 1.2: Performance Optimization ✅
-- ✅ Code splitting with React.lazy and Suspense
-- ✅ Lazy loading for problem library
-- ✅ React.memo for optimized re-renders
-- ✅ Loading states and skeleton screens
+**Test Runner**
+1. Navigate to `/testing`
+2. Write your implementation and test cases
+3. Click "Run All Tests" for AI validation
+
+### AI Chat in Editor
+1. Toggle "AI ON" in the chat panel
+2. Ask questions or request explanations
+3. Use "Explain" button for selected code analysis
+
+## 🆕 Recent Updates (v3.0.0)
+
+### Major Features ✅
+- ✅ **Google Gemini AI Integration**: Real AI-powered code generation, debugging, and testing
+- ✅ **Firebase Migration**: Complete transition from backend API to Firestore
+- ✅ **Problem Solver Mode**: Conditional problem panel display
+- ✅ **3D Landing Page**: Stunning Three.js 3D elements and animations
+- ✅ **Fully Responsive**: Mobile-optimized across all pages
+
+### Advanced Tools ✅
+- ✅ AI Code Generator with prompt-to-code conversion
+- ✅ Intelligent Debugger with structured issue detection
+- ✅ AI Test Runner with automated validation
+- ✅ Problem Library with beginner to advanced challenges
+
+### UI/UX Improvements ✅
+- ✅ Responsive layouts for Dashboard, Problems, and all Advanced Tools
+- ✅ Responsive Landing page with adaptive 3D elements
+- ✅ Glassmorphic design system
+- ✅ Smooth animations and transitions
 
 ## 🤝 Contributing
 
@@ -249,17 +290,17 @@ This project is licensed under the ISC License.
 
 ## 👨‍💻 Author
 
-**Sunil**
+**Sunil T**
 - GitHub: [@thatrasunil](https://github.com/thatrasunil)
 
 ## 🙏 Acknowledgments
 
-- **Google Gemini AI** for intelligent code assistance and explanations
-- **Google Meet** for seamless video conferencing integration
-- **Google Drive** for cloud storage and code export functionality
+- **Google Gemini AI** for advanced AI capabilities
+- **Google Firebase** for real-time database and authentication
 - **Monaco Editor** by Microsoft for the powerful code editor
+- **Three.js** and **React Three Fiber** for 3D graphics
+- **Framer Motion** for beautiful animations
 - React community for excellent tools and libraries
-- Framer Motion for beautiful animations
 
 ## 📞 Support
 
@@ -267,4 +308,4 @@ For support, please open an issue in the GitHub repository.
 
 ---
 
-**Made with ❤️ by Sunil**
+**Made with ❤️ by Sunil T**

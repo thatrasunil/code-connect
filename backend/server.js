@@ -9,6 +9,11 @@ const crypto = require('crypto');
 
 dotenv.config();
 
+// Import routes
+const problemsRouter = require('./routes/problems');
+const authRouter = require('./routes/auth');
+const verifyToken = require('./middleware/auth');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -25,14 +30,14 @@ const allowedOrigins = [
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     credentials: true
   }
 });
 
 app.use(cors({
   origin: allowedOrigins,
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   credentials: true,
   exposedHeaders: ["Access-Control-Allow-Origin"],
   optionsSuccessStatus: 200
@@ -87,6 +92,11 @@ const localRooms = new Map();
 const activeRooms = new Map(); // roomId -> Map<userId, connectionCount>
 const socketIdToUserId = new Map(); // socket.id -> userId
 
+// --- Mount Routes ---
+// Pass db instance to problems router
+app.use('/api/problems', problemsRouter(db));
+app.use('/api/auth', authRouter(db));
+
 // --- API Routes ---
 function generateRoomId() {
   const randomNum = crypto.randomBytes(4).readUInt32BE(0) % 90000000 + 10000000;
@@ -119,7 +129,85 @@ app.post('/api/create-room', async (req, res) => {
   }
 });
 
-app.get('/api/room/:roomId', async (req, res) => {
+// GET Dashboard Stats
+app.get('/api/dashboard/stats', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    let stats = { totalSessions: 0, roomsCreated: 0, languagesUsed: [] };
+
+    if (isFirestoreConnected) {
+      // Get rooms created by user
+      const roomsSnapshot = await db.collection('rooms').where('ownerId', '==', userId).get();
+      stats.roomsCreated = roomsSnapshot.size;
+      stats.totalSessions = stats.roomsCreated; // Using rooms count as sessions for now
+
+      const languages = new Set();
+      roomsSnapshot.forEach(doc => {
+        const lang = doc.data().language;
+        if (lang) languages.add(lang);
+      });
+      stats.languagesUsed = Array.from(languages);
+    } else {
+      // Local fallback
+      const rooms = Array.from(localRooms.values()).filter(r => r.ownerId === userId);
+      stats.roomsCreated = rooms.length;
+      stats.totalSessions = rooms.length;
+      stats.languagesUsed = [...new Set(rooms.map(r => r.language).filter(Boolean))];
+    }
+    res.json(stats);
+  } catch (err) {
+    console.error('Error fetching stats:', err);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// GET Leaderboard
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    let leaderboard = [];
+    if (isFirestoreConnected) {
+      const snapshot = await db.collection('users')
+        .orderBy('points', 'desc')
+        .limit(10)
+        .get();
+
+      snapshot.forEach(doc => {
+        leaderboard.push(doc.data());
+      });
+    } else {
+      // Mock for local
+      leaderboard = [];
+    }
+    res.json(leaderboard);
+  } catch (err) {
+    console.error('Error fetching leaderboard:', err);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// GET My Rooms
+app.get('/api/rooms/my-rooms', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    let rooms = [];
+    if (isFirestoreConnected) {
+      // Query rooms where ownerId matches userId
+      const snapshot = await db.collection('rooms').where('ownerId', '==', userId).get();
+      snapshot.forEach(doc => {
+        rooms.push({ id: doc.id, ...doc.data() });
+      });
+    } else {
+      // Fallback for in-memory
+      rooms = Array.from(localRooms.values()).filter(r => r.ownerId === userId);
+    }
+    res.json(rooms);
+  } catch (err) {
+    console.error('Error fetching my rooms:', err);
+    res.status(500).json({ error: 'Failed to fetch rooms' });
+  }
+});
+
+app.get('/api/rooms/:roomId', async (req, res) => {
   const { roomId } = req.params;
   try {
     let room;
@@ -144,35 +232,270 @@ app.get('/api/room/:roomId', async (req, res) => {
   }
 });
 
-// --- AI Configuration ---
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+// --- Missing Room Endpoints ---
+
+// GET Room Code
+app.get('/api/rooms/:roomId/code', async (req, res) => {
+  const { roomId } = req.params;
+  try {
+    let code = '';
+    if (isFirestoreConnected) {
+      const doc = await db.collection('rooms').doc(roomId).get();
+      if (doc.exists) code = doc.data().code || '';
+    } else {
+      const room = localRooms.get(roomId);
+      code = room ? room.code : '';
+    }
+    res.json({ content: code });
+  } catch (err) {
+    console.error('Error fetching code:', err);
+    res.status(500).json({ error: 'Failed to fetch code' });
+  }
+});
+
+// PUT Room Code
+app.put('/api/rooms/:roomId/code', async (req, res) => {
+  const { roomId } = req.params;
+  const { content } = req.body;
+  try {
+    if (isFirestoreConnected) {
+      await db.collection('rooms').doc(roomId).set({ code: content }, { merge: true });
+    } else {
+      const room = localRooms.get(roomId) || { roomId, messages: [], users: [] };
+      room.code = content;
+      localRooms.set(roomId, room);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error saving code:', err);
+    res.status(500).json({ error: 'Failed to save code' });
+  }
+});
+
+// GET Room Metadata (Language)
+app.get('/api/rooms/:roomId/metadata', async (req, res) => {
+  const { roomId } = req.params;
+  try {
+    let language = 'javascript';
+    if (isFirestoreConnected) {
+      const doc = await db.collection('rooms').doc(roomId).get();
+      if (doc.exists) language = doc.data().language || 'javascript';
+    } else {
+      const room = localRooms.get(roomId);
+      language = room ? room.language : 'javascript';
+    }
+    res.json({ language });
+  } catch (err) {
+    console.error('Error fetching metadata:', err);
+    res.status(500).json({ error: 'Failed to fetch metadata' });
+  }
+});
+
+// PUT Room Language
+app.put('/api/rooms/:roomId/language', async (req, res) => {
+  const { roomId } = req.params;
+  const { language } = req.body;
+  try {
+    if (isFirestoreConnected) {
+      await db.collection('rooms').doc(roomId).set({ language }, { merge: true });
+    } else {
+      const room = localRooms.get(roomId) || { roomId, messages: [], users: [] };
+      room.language = language;
+      localRooms.set(roomId, room);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error saving language:', err);
+    res.status(500).json({ error: 'Failed to save language' });
+  }
+});
+
+// GET Room Messages
+app.get('/api/rooms/:roomId/messages', async (req, res) => {
+  const { roomId } = req.params;
+  try {
+    let messages = [];
+    if (isFirestoreConnected) {
+      const doc = await db.collection('rooms').doc(roomId).get();
+      if (doc.exists) messages = doc.data().messages || [];
+    } else {
+      const room = localRooms.get(roomId);
+      messages = room ? room.messages : [];
+    }
+    res.json(messages);
+  } catch (err) {
+    console.error('Error fetching messages:', err);
+    res.status(500).json({ error: 'Failed to fetch messages' });
+  }
+});
+
+// POST Room Message
+app.post('/api/rooms/:roomId/messages', async (req, res) => {
+  const { roomId } = req.params;
+  const message = req.body; // { userId, content, type, ... }
+  try {
+    const newMessage = { ...message, id: Date.now(), timestamp: new Date().toISOString() };
+    if (isFirestoreConnected) {
+      await db.collection('rooms').doc(roomId).update({
+        messages: admin.firestore.FieldValue.arrayUnion(newMessage)
+      });
+    } else {
+      const room = localRooms.get(roomId) || { roomId, messages: [], users: [] };
+      if (!room.messages) room.messages = [];
+      room.messages.push(newMessage);
+      localRooms.set(roomId, room);
+    }
+    res.json(newMessage);
+  } catch (err) {
+    console.error('Error sending message:', err);
+    res.status(500).json({ error: 'Failed to send message' });
+  }
+});
+
+// GET Participants
+app.get('/api/rooms/:roomId/participants', async (req, res) => {
+  const { roomId } = req.params;
+  try {
+    let users = [];
+    if (isFirestoreConnected) {
+      // In a real app, query 'roomMembers' collection or subcollection.
+      // Here we used 'users' array in room doc in some places, or 'roomMembers' collection in others.
+      // Let's try room doc 'users' for simplicity matching socket logic
+      const doc = await db.collection('rooms').doc(roomId).get();
+      if (doc.exists) users = doc.data().users || [];
+    } else {
+      const room = localRooms.get(roomId);
+      users = room ? room.users : [];
+    }
+    res.json(users);
+  } catch (err) {
+    console.error('Error fetching participants:', err);
+    res.status(500).json({ error: 'Failed to fetch participants' });
+  }
+});
+
+// POST Heartbeat (Update Presence)
+app.post('/api/rooms/:roomId/heartbeat', async (req, res) => {
+  const { roomId } = req.params;
+  const { userId, username } = req.body;
+  try {
+    // For simplicity, just return success.
+    // Real logic would update 'lastActive' in DB.
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Heartbeat error:', err);
+    res.status(500).json({ error: 'Heartbeat failed' });
+  }
+});
+
+// POST Typing Status
+app.post('/api/rooms/:roomId/typing', async (req, res) => {
+  const { roomId } = req.params;
+  const { userId, isTyping } = req.body;
+  // Broadcasting handled by Socket.IO, endpoint just ack
+  res.json({ success: true });
+});
+
+// GET Active Typing Users
+app.get('/api/rooms/:roomId/typing/active', async (req, res) => {
+  res.json([]); // Placeholder
+});
+
+app.get('/api/rooms/:roomId/permissions', async (req, res) => {
+  const { roomId } = req.params;
+  const { userId } = req.query;
+  // For now, allow everyone to edit. 
+  // Future: Check if room is private/locked and if userId is owner or authorized.
+  res.json({ canEdit: true, canView: true });
+});
+
+// --- AI Configuration (Groq API) ---
+console.log("DEBUG: Loading AI Configuration");
+console.log("DEBUG: GROQ_API_KEY:", process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.substring(0, 10) + "..." : "undefined");
+console.log("DEBUG: GOOGLE_API_KEY:", process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.substring(0, 10) + "..." : "undefined");
+
+const GROQ_API_KEY = process.env.GROQ_API_KEY || process.env.GOOGLE_API_KEY;
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
+
+async function callGroqAPI(messages) {
+  if (!GROQ_API_KEY) {
+    throw new Error('API Key is missing. Please set GROQ_API_KEY in environment variables.');
+  }
+
+  try {
+    const response = await fetch(GROQ_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 1024
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Groq API Error (${response.status}):`, errorText);
+      throw new Error(`I am having trouble connecting to the AI service right now. (Status: ${response.status})`);
+    }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error('Groq API Exception:', error);
+    throw error;
+  }
+}
 
 app.post('/api/ai/chat', async (req, res) => {
   const { prompt, context } = req.body;
+
+  if (!prompt) {
+    return res.status(400).json({ error: 'Prompt is required' });
+  }
+
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const fullPrompt = context ? `${context}\n\nUser: ${prompt}` : prompt;
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    res.json({ response: response.text() });
+    const messages = [
+      { role: 'system', content: 'You are CodeConnect AI, a helpful assistant for coding and debugging. Keep responses concise and relevant to programming.' }
+    ];
+
+    if (context) {
+      messages.push({ role: 'user', content: `Context:\n${context}\n\nUser Question: ${prompt}` });
+    } else {
+      messages.push({ role: 'user', content: prompt });
+    }
+
+    const response = await callGroqAPI(messages);
+    res.json({ response });
   } catch (err) {
-    console.error('AI Error:', err);
-    res.status(500).json({ error: 'AI generation failed' });
+    console.error('AI Chat Error:', err);
+    res.status(500).json({ error: err.message || 'AI generation failed' });
   }
 });
 
 app.post('/api/ai/explain', async (req, res) => {
   const { code, language } = req.body;
+
+  if (!code) {
+    return res.status(400).json({ error: 'Code is required' });
+  }
+
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const prompt = `Explain the following ${language} code in simple terms:\n\n\`\`\`${language}\n${code}\n\`\`\``;
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    res.json({ response: response.text() });
+    const messages = [
+      { role: 'system', content: `You are an expert ${language || 'programming'} developer. Explain the code clearly and simply for a student.` },
+      { role: 'user', content: `Please explain this ${language || 'code'}:\n\n\`\`\`${language}\n${code}\n\`\`\`` }
+    ];
+
+    const response = await callGroqAPI(messages);
+    res.json({ response });
   } catch (err) {
-    console.error('AI Error:', err);
-    res.status(500).json({ error: 'AI generation failed' });
+    console.error('AI Explain Error:', err);
+    res.status(500).json({ error: err.message || 'AI generation failed' });
   }
 });
 

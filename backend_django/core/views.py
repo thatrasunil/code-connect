@@ -202,73 +202,42 @@ class RoomCodeView(APIView):
         content = request.data.get('content', '')
         
         db = get_firestore_client()
-        updated_firestore = False
-        
-        if db:
-            try:
-                db.collection('rooms').document(room_id).update({'code': content})
-                updated_firestore = True
-            except Exception as e:
-                print(f"Code Update Warning (Firestore): {e}")
-
-        # Always try to update local DB as fallback or primary
+        if not db:
+            return Response({'error': 'Database unavailable'}, status=503)
+            
         try:
-             room = Room.objects.filter(room_id=room_id).first()
-             if room:
-                 room.code = content
-                 room.save()
-                 return Response({
-                    'success': True,
-                    'message': 'Code saved successfully',
-                    'timestamp': datetime.datetime.now().isoformat()
-                 })
-        except Exception as e:
-            print(f"Code Update Error (SQL): {e}")
-
-        if updated_firestore:
-             return Response({
+            # Upsert (Create if missing, update if exists)
+            db.collection('rooms').document(room_id).set({
+                'code': content,
+                # Ensure essential fields exist if creating new
+                'roomId': room_id,
+                'updatedAt': datetime.datetime.now().isoformat()
+            }, merge=True)
+            
+            return Response({
                 'success': True,
                 'message': 'Code saved successfully (Firestore)',
                 'timestamp': datetime.datetime.now().isoformat()
             })
-
-        return Response({'error': 'Update failed'}, status=500)
+        except Exception as e:
+             print(f"Code Update Error (Firestore): {e}")
+             return Response({'error': 'Update failed'}, status=500)
 
 
 class RoomMessageView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, room_id):
-        # Already handled in RoomDetail, but if fetched separately:
         db = get_firestore_client()
-        messages = None
+        if not db: return Response([])
         
-        if db:
-            try:
-                doc = db.collection('rooms').document(room_id).get()
-                if doc.exists:
-                    messages = doc.to_dict().get('messages', [])
-            except Exception:
-                pass
-
-        if messages is None:
-             # Fallback to SQL
-            room = Room.objects.filter(room_id=room_id).first()
-            if room:
-                # Retrieve from Message model
-                msgs = Message.objects.filter(room=room).order_by('timestamp')
-                messages = []
-                for m in msgs:
-                    messages.append({
-                        'id': m.id,
-                        'userId': m.user_id,
-                        'content': m.content,
-                        'type': m.type,
-                        'attachmentUrl': m.attachment_url,
-                        'timestamp': m.timestamp.isoformat()
-                    })
-
-        return Response(messages if messages is not None else [])
+        try:
+            doc = db.collection('rooms').document(room_id).get()
+            if doc.exists:
+                return Response(doc.to_dict().get('messages', []))
+        except Exception:
+            pass
+        return Response([])
 
     def post(self, request, room_id):
         user_id = request.data.get('userId', 'Guest')
@@ -280,48 +249,25 @@ class RoomMessageView(APIView):
              return Response({'error': 'Content required'}, status=400)
              
         new_message = {
-            'id': int(time.time() * 1000),
+            'roomId': room_id,
             'userId': user_id,
             'content': content,
             'type': msg_type,
-            'attachmentUrl': file_url,
-            'timestamp': datetime.datetime.now().isoformat()
+            'fileUrl': file_url, # Frontend uses fileUrl
+            'createdAt': firestore.SERVER_TIMESTAMP
         }
 
         db = get_firestore_client()
-        saved_firestore = False
-        
-        if db:
-            try:
-                # Atomically add to array in Firestore
-                db.collection('rooms').document(room_id).update({
-                    'messages': firestore.ArrayUnion([new_message])
-                })
-                saved_firestore = True
-            except Exception as e:
-                print(f"Message Save Warning (Firestore): {e}")
-        
-        # Always try saving to SQL
+        if not db:
+             return Response({'error': 'Database unavailable'}, status=503)
+             
         try:
-            room = Room.objects.filter(room_id=room_id).first()
-            if room:
-                # Save to Message model
-                Message.objects.create(
-                    room=room,
-                    user_id=user_id,
-                    content=content,
-                    type=msg_type,
-                    attachment_url=file_url,
-                    timestamp=datetime.datetime.now()
-                )
-                return Response(new_message, status=201)
+            # Add to 'messages' collection
+            db.collection('messages').add(new_message)
+            return Response({'status': 'Message sent'}, status=201)
         except Exception as e:
-             print(f"Message Save Error (SQL): {e}")
-
-        if saved_firestore:
-            return Response(new_message, status=201)
-            
-        return Response({'error': 'Failed to save message'}, status=500)
+             print(f"Message Save Error: {e}")
+             return Response({'error': 'Failed to save message'}, status=500)
 
 
 class FileUploadView(APIView):
@@ -359,35 +305,20 @@ class RoomDetailView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, room_id):
+        # Strict Firestore Read
         db = get_firestore_client()
-        room_data = None
-        
-        # 1. Fetch Room Logic (Firestore or Django)
-        if db:
-            try:
-                doc_ref = db.collection('rooms').document(room_id)
-                doc = doc_ref.get()
-                if doc.exists:
-                    room_data = doc.to_dict()
-            except Exception as e:
-                 print(f"Firestore Fetch Error: {e}")
-
-        if not room_data:
-            # Fallback to Django
-            room = Room.objects.filter(room_id=room_id).first()
-            if room:
-                room_data = {
-                    'roomId': room.room_id,
-                    'code': room.code,
-                    'language': room.language,
-                    'messages': [], 
-                    'owner': room.owner.username if room.owner else None,
-                    'isPublic': room.is_public,
-                    'password': room.password
-                }
-
-        if not room_data:
-             return Response({'error': 'Room not found'}, status=status.HTTP_404_NOT_FOUND)
+        if not db:
+            return Response({'error': 'Database unavailable'}, status=503)
+            
+        try:
+            doc = db.collection('rooms').document(room_id).get()
+            if not doc.exists:
+                 return Response({'error': 'Room not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+            room_data = doc.to_dict()
+        except Exception as e:
+            print(f"Firestore Fetch Error: {e}")
+            return Response({'error': 'Room fetch failed'}, status=500)
 
         # 2. Access Control Logic
         is_public = room_data.get('isPublic', True)

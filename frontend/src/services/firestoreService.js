@@ -13,7 +13,10 @@ import {
     limit,
     increment,
     getDoc,
-    getCountFromServer // Importing getCountFromServer although we use onSnapshot for real-time
+    getCountFromServer,
+    runTransaction,
+    deleteDoc,
+    getDocs
 } from "firebase/firestore";
 
 
@@ -186,4 +189,270 @@ export const subscribeToOnlineUsers = (callback) => {
     }, (error) => {
         console.error("❌ Online users subscription error:", error);
     });
+};
+
+// --- New Realtime Services ---
+
+/**
+ * Subscribe to a specific room's metadata
+ */
+export const subscribeToRoom = (roomId, callback) => {
+    return onSnapshot(doc(db, "rooms", roomId), (doc) => {
+        if (doc.exists()) {
+            callback({ id: doc.id, ...doc.data() });
+        } else {
+            callback(null);
+        }
+    });
+};
+
+/**
+ * Subscribe to room participants (Members)
+ */
+export const subscribeToRoomMembers = (roomId, callback) => {
+    const q = query(
+        collection(db, "roomMembers"),
+        where("roomId", "==", roomId)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const members = [];
+        snapshot.forEach((doc) => {
+            members.push({ id: doc.id, ...doc.data() });
+        });
+        callback(members);
+    });
+};
+
+/**
+ * Subscribe to room messages
+ */
+export const subscribeToMessages = (roomId, callback) => {
+    const q = query(
+        collection(db, "messages"),
+        where("roomId", "==", roomId),
+        orderBy("createdAt", "asc")
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const messages = [];
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            // Convert Timestamp to Date object for easier handling in UI
+            const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+            messages.push({ id: doc.id, ...data, createdAt });
+        });
+        callback(messages);
+    }, (error) => {
+        console.error("❌ Messages subscription error:", error);
+    });
+};
+
+/**
+ * Join a room (update roomMembers)
+ */
+export const joinRoom = async (roomId, user) => {
+    if (!user) return;
+    const userId = user.id || user.uid; // Support both AuthContext user and raw Firebase user
+    const memberId = `${userId}_${roomId}`;
+    const memberRef = doc(db, "roomMembers", memberId);
+
+    // We can allow users to "update" their status to online just by joining
+    await setDoc(memberRef, {
+        roomId,
+        userId: userId,
+        displayName: user.displayName || user.username || "Anonymous",
+        status: 'online',
+        lastActive: serverTimestamp(),
+        role: 'participant' // Default role
+    }, { merge: true });
+
+    return memberId;
+};
+
+/**
+ * Update User Status in a Room (for heartbeat)
+ */
+export const updateUserStatus = async (roomId, userId, status) => {
+    if (!userId) return;
+    const memberId = `${userId}_${roomId}`;
+    const memberRef = doc(db, "roomMembers", memberId);
+
+    try {
+        await updateDoc(memberRef, {
+            status,
+            lastActive: serverTimestamp()
+        });
+    } catch (e) {
+        // Warning: if doc doesn't exist, updateDoc fails. 
+        // Silent fail is acceptable for heartbeat noise, or we could use setDoc with merge.
+    }
+};
+
+/**
+ * Send a message
+ */
+export const sendMessage = async (roomId, messageData) => {
+    await addDoc(collection(db, "messages"), {
+        roomId,
+        ...messageData,
+        createdAt: serverTimestamp()
+    });
+};
+
+/**
+ * Create generic room (Milestone 1)
+ */
+export const createRoom = async (roomData) => {
+    try {
+        let roomId;
+        let roomRef;
+        let isUnique = false;
+        let attempts = 0;
+
+        // Generate unique 6-digit numeric ID
+        while (!isUnique && attempts < 5) {
+            roomId = Math.floor(100000 + Math.random() * 900000).toString();
+            roomRef = doc(db, "rooms", roomId);
+            const docSnap = await getDoc(roomRef);
+            if (!docSnap.exists()) {
+                isUnique = true;
+            }
+            attempts++;
+        }
+
+        if (!isUnique) {
+            throw new Error("Failed to generate a unique numeric Room ID. Please try again.");
+        }
+
+        const newRoom = {
+            title: roomData.title || "Untitled Room",
+            ownerId: roomData.ownerId,
+            isPublic: roomData.isPublic !== false,
+            createdAt: serverTimestamp(),
+            language: roomData.language || "javascript",
+            participantsCount: 0,
+            room_id: roomId, // Store numeric ID field as well
+            ...roomData
+        };
+
+        await setDoc(roomRef, newRoom);
+        console.log("✅ Room created in 'rooms' with ID:", roomId);
+        return { id: roomId, ...newRoom };
+    } catch (error) {
+        console.error("❌ Error creating room:", error);
+        throw error;
+    }
+};
+
+
+/**
+ * Update the code content of a room
+ */
+export const updateRoomCode = async (roomId, code, language) => {
+    try {
+        const roomRef = doc(db, "rooms", roomId);
+        const updates = {
+            lastModified: serverTimestamp(),
+            code: code
+        };
+        if (language) updates.language = language;
+
+        await updateDoc(roomRef, updates);
+    } catch (error) {
+        console.error("❌ Error updating room code:", error);
+    }
+};
+
+/**
+ * Update typing status for a user in a room
+ * Uses a subcollection 'typing' with docs named by userId
+ */
+export const updateTypingStatus = async (roomId, userId, isTyping) => {
+    try {
+        if (!roomId || !userId) return;
+        const typingRef = doc(db, "rooms", roomId, "typing", userId);
+
+        if (isTyping) {
+            await setDoc(typingRef, {
+                userId,
+                isTyping: true,
+                timestamp: serverTimestamp()
+            });
+        } else {
+            await deleteDoc(typingRef);
+        }
+    } catch (error) {
+        // console.error("Error updating typing status:", error);
+    }
+};
+
+/**
+ * Subscribe to active typing users
+ */
+export const subscribeToTyping = (roomId, callback) => {
+    const q = query(
+        collection(db, "rooms", roomId, "typing"),
+        orderBy("timestamp", "desc") // Simplistic, might need cleanup of old entries
+    );
+
+    return onSnapshot(q, (snapshot) => {
+        const typingUsers = [];
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            // Filter out stale typing indicators (> 5 seconds old)
+            // Note: client clocks might differ, but serverTimestamp helps.
+            // For now, just return all, client can filter or we rely on delete on blur
+            if (data.isTyping) typingUsers.push(data.userId);
+        });
+        callback(typingUsers);
+    });
+};
+
+/**
+ * Fetch specific user data (stats)
+ */
+export const fetchUserData = async (userId) => {
+    try {
+        const userDoc = await getDoc(doc(db, "users", userId));
+        if (userDoc.exists()) {
+            return userDoc.data();
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+        return null;
+    }
+};
+
+/**
+ * Fetch rooms created by a user
+ */
+/**
+ * Fetch rooms created by a user
+ */
+export const fetchUserRooms = async (userId) => {
+    try {
+        const q = query(
+            collection(db, "rooms"),
+            where("ownerId", "==", userId)
+        );
+        const snapshot = await getDocs(q);
+        const rooms = [];
+        snapshot.forEach(doc => {
+            rooms.push({
+                id: doc.id,
+                room_id: doc.data().room_id || doc.id,
+                ...doc.data(),
+                created_at: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate() : new Date()
+            });
+        });
+
+        // Client-side sort and limit to avoid needing a composite index
+        rooms.sort((a, b) => b.created_at - a.created_at);
+        return rooms.slice(0, 10);
+    } catch (error) {
+        console.error("Error fetching user rooms:", error);
+        return [];
+    }
 };

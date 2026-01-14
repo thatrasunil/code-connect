@@ -67,7 +67,26 @@ class ErrorBoundary extends React.Component {
                             overflow: 'auto'
                         }}>
                             <code style={{ whiteSpace: 'pre-wrap' }}>
-                                {typeof this.state.error === 'object' ? JSON.stringify(this.state.error, null, 2) : String(this.state.error)}
+                                {(() => {
+                                    const err = this.state.error;
+                                    if (!err) return '';
+                                    if (typeof err === 'string') return err;
+                                    if (err instanceof Error) {
+                                        return `${err.toString()}\n\nStack:\n${err.stack}`;
+                                    }
+                                    if (typeof err === 'object') {
+                                        try {
+                                            return JSON.stringify(err, null, 2);
+                                        } catch (e) {
+                                            // Circular reference or other stringify error
+                                            const keys = Object.keys(err).join(', ');
+                                            const name = err.name || err.constructor.name || 'Object';
+                                            const message = err.message || '';
+                                            return `[Circular Object: ${name}]\nMessage: ${message}\nKeys: ${keys}\n\nFallback String: ${String(err)}`;
+                                        }
+                                    }
+                                    return String(err);
+                                })()}
                                 {'\n\nComponent Stack:\n'}
                                 {this.state.errorInfo ? this.state.errorInfo.componentStack : ''}
                             </code>

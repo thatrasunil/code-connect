@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { auth } from '../firebase';
 import { motion } from 'framer-motion';
 import { FaUser, FaEnvelope, FaSave, FaDice, FaCamera } from 'react-icons/fa';
 import config from '../config';
@@ -47,7 +48,16 @@ const Profile = () => {
         setLoading(true);
 
         try {
-            const token = localStorage.getItem('token');
+            let token = localStorage.getItem('token');
+            if (user?.provider === 'firebase' && auth.currentUser) {
+                token = await auth.currentUser.getIdToken();
+            }
+
+            if (!token) {
+                addToast('Authentication error', 'error');
+                setLoading(false);
+                return;
+            }
             const res = await fetch(`${config.BACKEND_URL}/api/auth/me`, {
                 method: 'PATCH',
                 headers: {

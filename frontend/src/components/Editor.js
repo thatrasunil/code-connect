@@ -6,32 +6,38 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { useAuth } from '../contexts/AuthContext';
 import ChatPanel from './ChatPanel';
-import InterviewPanel from './InterviewPanel';
+import ProblemPanel from './ProblemPanel';
 import OutputPanel from './OutputPanel';
 import SettingsModal from './SettingsModal';
 import config from '../config';
 import { SUPPORTED_LANGUAGES, SUPPORTED_THEMES, DEFAULT_EDITOR_SETTINGS } from '../constants';
-import { incrementUserStats, logTransaction } from '../services/firestoreService';
+import {
+    incrementUserStats,
+    logTransaction,
+    subscribeToRoom,
+    subscribeToMessages,
+    subscribeToRoomMembers,
+    subscribeToTyping,
+    joinRoom,
+    sendMessage,
+    updateRoomCode,
+    updateTypingStatus,
+    updateUserStatus
+} from '../services/firestoreService';
 
 // Memoize sub-components to prevent re-renders on every keystroke
-const MemoizedInterviewPanel = React.memo(InterviewPanel);
+const MemoizedProblemPanel = React.memo(ProblemPanel);
 const MemoizedChatPanel = React.memo(ChatPanel);
 const MemoizedOutputPanel = React.memo(OutputPanel);
-
-
-
 
 const CodeEditor = () => {
     const { roomId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const { user } = useAuth();
-    const token = localStorage.getItem('token');
 
     // Auth State
-    const [isLocked, setIsLocked] = useState(false);
-    const [roomPassword, setRoomPassword] = useState('');
-    const [passwordInput, setPasswordInput] = useState('');
+    const [isLocked, setIsLocked] = useState(false); // Can interpret private field from firestore later
     const [accessError, setAccessError] = useState('');
 
     const queryParams = new URLSearchParams(location.search);
@@ -56,7 +62,7 @@ const CodeEditor = () => {
 
     // Panels
     const [showChat, setShowChat] = useState(true);
-    const [showInterview, setShowInterview] = useState(true);
+    const [showInterview, setShowInterview] = useState(!!initialQuestionId);
     const [aiMode, setAiMode] = useState(false);
 
     // Real-time Data
@@ -64,179 +70,72 @@ const CodeEditor = () => {
     const [messages, setMessages] = useState([]);
     const [currentTypingUsers, setCurrentTypingUsers] = useState([]);
     const [userRole, setUserRole] = useState('CANDIDATE');
+
+    // For now assume everyone can edit if they have access
     const [permissions, setPermissions] = useState({ canEdit: true, canView: true, canEvaluate: false });
     const typingTimeoutRef = useRef(null);
 
     const editorRef = useRef(null);
     const monaco = useMonaco();
 
-    // Helper for Authenticated Requests with Password
-    const authenticatedFetch = async (url, options = {}) => {
-        const headers = {
-            ...options.headers,
-            'Authorization': token ? `Bearer ${token}` : '',
-            'X-Room-Password': roomPassword
-        };
-        return fetch(url, { ...options, headers });
-    };
-
-    // 1. Initial Access Check
+    // 1. Subscribe to Room Data (Metadata & Code)
     useEffect(() => {
-        const checkAccess = async () => {
-            try {
-                // Check Room Detail (which now enforces password)
-                const res = await fetch(`${config.BACKEND_URL}/api/rooms/${roomId}/`, {
-                    headers: {
-                        'Authorization': token ? `Bearer ${token}` : '',
-                        'X-Room-Password': roomPassword
+        const unsubscribe = subscribeToRoom(roomId, (roomData) => {
+            if (roomData) {
+                // Determine if locked? For now assuming public or handling via firestore rules
+                // if (roomData.isPrivate && ...) 
+
+                // Update Code if changed remotely and we aren't typing furiously
+                if (roomData.code && roomData.code !== lastSavedCodeRef.current) {
+                    // Check if local code is significantly different or if we just typed
+                    const timeSinceType = Date.now() - lastTypeTimeRef.current;
+                    if (timeSinceType > 2000) {
+                        setCode(roomData.code);
+                        lastSavedCodeRef.current = roomData.code;
                     }
-                });
-
-                if (res.status === 403) {
-                    setIsLocked(true);
-                    return;
                 }
 
-                if (res.ok) {
-                    setIsLocked(false);
-                    setAccessError('');
-                    const data = await res.json();
-                    if (data.language) setLanguage(data.language);
-                    if (data.code) setCode(data.code);
+                if (roomData.language && roomData.language !== language) {
+                    setLanguage(roomData.language);
                 }
-            } catch (err) {
-                console.error("Access Check Failed", err);
+            } else {
+                setAccessError("Room not found");
+                // navigate('/dashboard'); // Optional: redirect if invalid
             }
+        });
+
+        const unsubMessages = subscribeToMessages(roomId, setMessages);
+        const unsubMembers = subscribeToRoomMembers(roomId, setParticipants);
+        const unsubTyping = subscribeToTyping(roomId, (users) => {
+            const myUserId = user?.username || 'Guest';
+            setCurrentTypingUsers(users.filter(u => u !== myUserId));
+        });
+
+        // Join the room
+        const myUser = user || { uid: 'guest_' + Math.floor(Math.random() * 1000), username: 'Guest' };
+        joinRoom(roomId, myUser);
+
+        return () => {
+            unsubscribe();
+            unsubMessages();
+            unsubMembers();
+            unsubTyping();
+            // Optional: Leave room / mark offline
         };
-        checkAccess();
-    }, [roomId, token, roomPassword]);
+    }, [roomId, user]); // Removed unnecessary deps
 
-    const handleUnlock = (e) => {
-        e.preventDefault();
-        setRoomPassword(passwordInput); // Triggers effect to retry
-    };
-
-    // Load Local Backup
+    // Heartbeat / Presence
     useEffect(() => {
-        const savedCode = localStorage.getItem(`code_backup_${roomId}`);
-        if (savedCode && savedCode !== code) {
-            setCode(savedCode);
-        }
-    }, [roomId]);
-
-    // Fetch user permissions
-    useEffect(() => {
-        if (isLocked) return;
-        const fetchPermissions = async () => {
-            try {
-                const userId = user?.username || 'Guest';
-                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/permissions?userId=${userId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setUserRole(data.role);
-                    setPermissions(data);
-                }
-            } catch (err) {
-                console.error("Failed to fetch permissions", err);
-            }
-        };
-        fetchPermissions();
-    }, [roomId, user, isLocked, roomPassword]);
-
-    // Polling for Messages and Typing Status
-    useEffect(() => {
-        if (isLocked) return;
-
-        const fetchMessages = async () => {
-            try {
-                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data)) setMessages(data);
-                    else setMessages([]);
-                }
-            } catch (err) { console.error("Failed to fetch messages", err); }
-        };
-
-        const fetchParticipants = async () => {
-            try {
-                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/participants`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setParticipants(data);
-                }
-            } catch (err) { console.error("Failed to fetch participants", err); }
-        };
-
-        const fetchTypingUsers = async () => {
-            try {
-                const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing/active`);
-                if (res.ok) {
-                    const users = await res.json();
-                    const myUserId = user?.username || 'Guest';
-                    setCurrentTypingUsers(users.filter(u => u !== myUserId));
-                }
-            } catch (err) { console.error("Failed to fetch typing users", err); }
-        };
-
-        const sendHeartbeat = async () => {
-            try {
-                await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/heartbeat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        userId: user?.username || 'Guest',
-                        username: user?.username || 'Guest'
-                    })
-                });
-            } catch (err) { console.error("Heartbeat failed", err); }
-        };
-
-        const fetchRoomData = async () => {
-            // Only fetch code if user hasn't typed in last 2 seconds
-            if (Date.now() - lastTypeTimeRef.current < 2000) return;
-
-            try {
-                // Fetch Code
-                const resCode = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/code/`);
-                if (resCode.ok) {
-                    const data = await resCode.json();
-                    // Only update if content is different and we are not currently saving
-                    if (data.content !== lastSavedCodeRef.current && data.content !== code) {
-                        setCode(data.content);
-                        lastSavedCodeRef.current = data.content;
-                    }
-                }
-
-                // Fetch Language
-                const resLang = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/metadata/`);
-                if (resLang.ok) {
-                    const data = await resLang.json();
-                    if (data.language && data.language !== language) {
-                        setLanguage(data.language);
-                        localStorage.setItem(`editor_language_${roomId}`, data.language);
-                    }
-                }
-            } catch (err) { console.error("Failed to fetch room data", err); }
-        };
-
-        // Initial calls
-        fetchMessages();
-        fetchParticipants();
-        fetchTypingUsers();
-        sendHeartbeat();
-        fetchRoomData();
+        const myUserId = user?.id || user?.uid;
+        if (!myUserId) return;
 
         const interval = setInterval(() => {
-            fetchMessages();
-            fetchParticipants();
-            fetchTypingUsers();
-            sendHeartbeat();
-            fetchRoomData();
-        }, 3000); // Poll every 3 seconds
+            updateUserStatus(roomId, myUserId, 'online');
+        }, 30000); // 30s heartbeat
 
         return () => clearInterval(interval);
-    }, [roomId, user, isLocked, roomPassword]);
+    }, [roomId, user]);
+
 
     // Auto-Save
     useEffect(() => {
@@ -244,27 +143,20 @@ const CodeEditor = () => {
         const interval = setInterval(async () => {
             if (editorRef.current) {
                 const currentCode = editorRef.current.getValue();
+                // Save if changed locally
                 if (currentCode !== lastSavedCodeRef.current) {
                     setIsSaving(true);
                     localStorage.setItem(`code_backup_${roomId}`, currentCode);
 
-                    try {
-                        await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/code/`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ content: currentCode })
-                        });
-                        lastSavedCodeRef.current = currentCode;
-                    } catch (err) {
-                        console.error("Failed to save code", err);
-                    } finally {
-                        setTimeout(() => setIsSaving(false), 800);
-                    }
+                    await updateRoomCode(roomId, currentCode, language);
+                    lastSavedCodeRef.current = currentCode;
+
+                    setTimeout(() => setIsSaving(false), 800);
                 }
             }
-        }, 2000);
+        }, 2000); // Debounce save to 2s
         return () => clearInterval(interval);
-    }, [roomId, token, isLocked, roomPassword]);
+    }, [roomId, isLocked, language]); // Added language dep to save lang changes too
 
     // Handlers
     const handleEditorChange = (value) => {
@@ -277,7 +169,8 @@ const CodeEditor = () => {
         setOutput([{ type: 'info', content: `Running ${language} code...` }]);
 
         try {
-            const res = await authenticatedFetch(`${config.BACKEND_URL}/api/execute`, {
+            // Still need backend for execution
+            const res = await fetch(`${config.BACKEND_URL}/api/execute`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -287,28 +180,14 @@ const CodeEditor = () => {
                 })
             });
 
-
-
             const data = await res.json();
 
             if (res.ok) {
-                if (user?.id) {
-                    logTransaction(user.id, 'CODE_EXECUTED', {
-                        language,
-                        success: true,
-                        roomId
-                    });
-                }
+                // ... Log transaction if needed
                 const runResult = data.results && data.results.length > 0 ? data.results[0] : null;
                 if (runResult) {
-                    // ... (keep existing logic)
                     if (runResult.error) {
-                        const errorContent = `Error: ${runResult.error}`;
-                        const outputLines = [{ type: 'error', content: errorContent }];
-                        if (language === 'javascript' && (runResult.error.includes('print is not defined') || runResult.error.includes('NameError'))) {
-                            outputLines.push({ type: 'warning', content: '💡 Hint: It looks like you are writing Python code. Switch the language selector to "Python".' });
-                        }
-                        setOutput(outputLines);
+                        setOutput([{ type: 'error', content: `Error: ${runResult.error}` }]);
                     } else {
                         setOutput([
                             { type: 'info', content: '> Code Executed:' },
@@ -319,10 +198,10 @@ const CodeEditor = () => {
                     setOutput([{ type: 'info', content: 'No output' }]);
                 }
             } else {
-                setOutput([{ type: 'error', content: `Execution Failed: ${data.detail || data.error || 'Unknown Error'}` }]);
+                setOutput([{ type: 'error', content: `Execution Failed: ${data.detail || data.error || 'Server unreachable'}` }]);
             }
         } catch (err) {
-            setOutput([{ type: 'error', content: `Error: ${err.message}` }]);
+            setOutput([{ type: 'error', content: `Error: ${err.message}. Ensure backend is running for code execution.` }]);
         }
     };
 
@@ -359,77 +238,61 @@ const CodeEditor = () => {
 
     const handleGoogleMeet = () => window.open('https://meet.google.com/new', '_blank');
 
-
-
     const handleSendMessage = async (text, type = 'TEXT', fileUrl = null, parentId = null) => {
         const finalType = aiMode ? 'AI_PROMPT' : type;
+        const msgData = {
+            userId: user?.username || 'Guest',
+            content: text,
+            type: finalType,
+            fileUrl,
+            parentId,
+            // User avatar etc can be added here
+            avatar: user?.photoURL || null
+        };
 
         try {
-            const res = await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user?.username || 'Guest',
-                    content: text,
-                    type: finalType,
-                    fileUrl,
-                    parentId
-                })
-            });
+            await sendMessage(roomId, msgData);
 
-            if (res.ok) {
-                const newMsg = await res.json();
-                setMessages(prev => [...prev, newMsg]);
+            if (user?.id && !aiMode && type === 'TEXT') {
+                incrementUserStats(user.id, 'message');
+            }
 
-                // Increment Firestore Stats (only for human messages)
-                if (user?.id && !aiMode && type === 'TEXT') {
-                    incrementUserStats(user.id, 'message');
-                }
-
-                if (aiMode && type === 'TEXT') {
-                    handleAskAI(text);
-                }
+            if (aiMode && type === 'TEXT') {
+                handleAskAI(text);
             }
         } catch (err) { console.error("Failed to send message", err); }
     };
 
     const handleAskAI = async (prompt) => {
+        // Mocking AI response if backend is down or using generic one
+        // because AI endpoint is also backend
         try {
-            setMessages(prev => [...prev, { id: Date.now() + 1, userId: 'Gemini AI', content: 'Thinking...', type: 'AI_PENDING' }]);
+            // Optimistic AI Pending
+            // Note: We might not want to save 'Thinking...' to firestore, just local state?
+            // But for shared AI chat, it should be in firestore. Let's just do final response.
+
             const res = await fetch(`${config.BACKEND_URL}/api/ai/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt, context: code })
             });
-            if (!res.ok) throw new Error(`Server Error: ${res.status}`);
-            const data = await res.json();
 
-            setMessages(prev => prev.filter(m => m.type !== 'AI_PENDING'));
+            if (!res.ok) throw new Error("AI Backend Unavailable");
+            const data = await res.json();
             const aiResponse = typeof data.response === 'object' ? JSON.stringify(data.response) : String(data.response || '');
 
-            // Persist AI Response
-            await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/messages`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: 'Gemini AI',
-                    content: aiResponse,
-                    type: 'AI_RESPONSE',
-                })
-            });
-
-            // Optimistic update (though poll will catch it too)
-            setMessages(prev => [...prev, {
-                id: Date.now() + 2,
+            await sendMessage(roomId, {
                 userId: 'Gemini AI',
                 content: aiResponse,
-                type: 'AI_RESPONSE',
-                timestamp: new Date().toISOString()
-            }]);
+                type: 'AI_RESPONSE'
+            });
 
         } catch (err) {
-            setMessages(prev => prev.filter(m => m.type !== 'AI_PENDING'));
-            setMessages(prev => [...prev, { id: Date.now() + 3, userId: 'System', content: `Error: ${err.message}`, type: 'TEXT' }]);
+            await sendMessage(roomId, {
+                userId: 'System',
+                content: `AI Error: ${err.message}`,
+                type: 'TEXT'
+            });
         }
     };
 
@@ -443,51 +306,24 @@ const CodeEditor = () => {
     };
 
     const handleTyping = async () => {
-        if (!user) return;
+        const myUserId = user?.username || 'Guest';
         if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-        try {
-            await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: user.username, isTyping: true })
-            });
-        } catch (err) { }
+
+        await updateTypingStatus(roomId, myUserId, true);
 
         typingTimeoutRef.current = setTimeout(async () => {
-            try {
-                await authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/typing`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.username, isTyping: false })
-                });
-            } catch (err) { }
+            await updateTypingStatus(roomId, myUserId, false);
         }, 2000);
     };
 
     if (isLocked) {
         return (
+            // Lock Screen (Simplified, as password logic requires valid backend usually)
+            // We can assume open for now or check roomData.password in firestore
             <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', color: 'white' }}>
-                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', maxWidth: '400px', width: '90%' }}>
-                    <FaLock size={50} color="#ef4444" style={{ marginBottom: '1.5rem' }} />
-                    <h2 style={{ marginBottom: '1rem' }}>Private Room</h2>
-                    <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>This room is password protected.</p>
-
-                    <form onSubmit={handleUnlock}>
-                        <input
-                            type="password"
-                            placeholder="Enter password..."
-                            value={passwordInput}
-                            onChange={e => setPasswordInput(e.target.value)}
-                            style={{
-                                width: '100%', padding: '1rem', borderRadius: '12px',
-                                background: 'rgba(255,255,255,0.05)', border: '1px solid #334155',
-                                color: 'white', marginBottom: '1rem', outline: 'none'
-                            }}
-                        />
-                        <button type="submit" className="btn" style={{ width: '100%', padding: '1rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '12px' }}>
-                            Unlock Room
-                        </button>
-                    </form>
+                <div className="glass-card" style={{ padding: '3rem', textAlign: 'center' }}>
+                    <h2>Room Locked</h2>
+                    <p>Please contact room owner.</p>
                 </div>
             </div>
         );
@@ -499,6 +335,20 @@ const CodeEditor = () => {
             <div style={{ padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #334155', background: '#1e293b' }}>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <div className="logo" style={{ fontWeight: 'bold', fontSize: '1.2rem', color: '#3b82f6', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>CodeConnect</div>
+
+                    {/* Room ID Badge */}
+                    <div style={{
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        color: '#60a5fa',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.85rem',
+                        fontWeight: '600',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                    }}>
+                        Room: {roomId}
+                    </div>
+
                     <div style={{ height: '24px', width: '1px', background: '#475569' }}></div>
 
                     {/* Language Selector */}
@@ -508,11 +358,8 @@ const CodeEditor = () => {
                             const newLang = e.target.value;
                             setLanguage(newLang);
                             localStorage.setItem(`editor_language_${roomId}`, newLang);
-                            authenticatedFetch(`${config.BACKEND_URL}/api/rooms/${roomId}/language/`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ language: newLang })
-                            }).catch(err => console.error(err));
+                            // Also update remote
+                            updateRoomCode(roomId, code, newLang);
                         }}
                         style={{ background: '#334155', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', outline: 'none' }}
                     >
@@ -578,11 +425,13 @@ const CodeEditor = () => {
                     animate={{ width: showInterview ? 350 : 0, opacity: showInterview ? 1 : 0 }}
                     style={{ borderRight: '1px solid #334155', display: showInterview ? 'block' : 'none', background: '#1e293b' }}
                 >
-                    <MemoizedInterviewPanel
+                    <MemoizedProblemPanel
                         socket={null}
                         roomId={roomId}
                         onPostQuestion={(text) => setCode(prev => text + prev)}
-                        initialQuestionId={initialQuestionId}
+                        questionId={initialQuestionId}
+                        isOpen={showInterview}
+                        onClose={() => setShowInterview(false)}
                     />
                 </motion.div>
 
@@ -659,7 +508,7 @@ const CodeEditor = () => {
             </div>
 
             <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '10px', zIndex: 100 }}>
-                {!showInterview && <button onClick={() => setShowInterview(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaShareAlt /></button>}
+                {initialQuestionId && !showInterview && <button onClick={() => setShowInterview(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaBook /></button>}
                 {!showChat && <button onClick={() => setShowChat(true)} className="btn primary-btn" style={{ borderRadius: '50%', padding: '10px' }}><FaShareAlt style={{ transform: 'scaleX(-1)' }} /></button>}
             </div>
         </div>

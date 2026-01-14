@@ -13,5 +13,8 @@ export const DEFAULT_EDITOR_SETTINGS = {
     fontSize: 14,
     wordWrap: 'off',
     lineNumbers: 'on',
-    tabSize: 4
+    tabSize: 4,
+    minimap: true,
+    fontFamily: "'Fira Code', 'JetBrains Mono', Consolas, monospace",
+    bracketPairColorization: true
 };

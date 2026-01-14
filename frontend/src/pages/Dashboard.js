@@ -2,23 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FaPlus, FaLaptopCode, FaChartPie, FaHistory, FaProjectDiagram, FaTrophy, FaCode, FaBrain, FaArrowRight } from 'react-icons/fa';
+import { FaPlus, FaLaptopCode, FaChartPie, FaHistory, FaProjectDiagram, FaTrophy, FaCode, FaBrain, FaArrowRight, FaBug, FaVial, FaMagic } from 'react-icons/fa';
 import RoomChoiceModal from '../components/RoomChoiceModal';
 import OnlineUsersModal from '../components/OnlineUsersModal';
+import Loading from '../components/Loading';
 
 import config from '../config';
 
-import { incrementUserStats, logTransaction, subscribeToOnlineUsers } from '../services/firestoreService';
+import { auth } from '../firebase';
+import {
+    incrementUserStats,
+    logTransaction,
+    subscribeToOnlineUsers,
+    createRoom,
+    fetchUserData,
+    fetchUserRooms,
+    subscribeToLeaderboard
+} from '../services/firestoreService';
 
 const Dashboard = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [stats, setStats] = useState({ totalSessions: 0, roomsCreated: 0, languagesUsed: [] });
     const [myRooms, setMyRooms] = useState([]);
-    const [pastInterviews, setPastInterviews] = useState([]);
     const [leaderboard, setLeaderboard] = useState([]);
-    const [activeTab, setActiveTab] = useState('rooms'); // 'rooms' or 'interviews'
     const [loading, setLoading] = useState(true);
+    const [isCreating, setIsCreating] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -29,36 +38,38 @@ const Dashboard = () => {
     const BACKEND_URL = config.BACKEND_URL;
 
     useEffect(() => {
-        const fetchData = async () => {
+        const loadDashboardData = async () => {
+            if (!user) return;
             try {
-                const token = localStorage.getItem('token');
-                const headers = { Authorization: `Bearer ${token}` };
+                // 1. Fetch User Stats from Firestore
+                const userData = await fetchUserData(user.uid || user.id);
+                if (userData) {
+                    setStats({
+                        totalSessions: userData.rooms || 0, // Using rooms as proxy for sessions
+                        roomsCreated: userData.rooms || 0,
+                        languagesUsed: ['JavaScript', 'Python'] // Placeholder or needs aggregation
+                    });
+                }
 
-                // Fetch Stats
-                const statsRes = await fetch(`${BACKEND_URL}/api/dashboard/stats`, { headers });
-                if (statsRes.ok) setStats(await statsRes.json());
-
-                // Fetch My Rooms
-                const roomsRes = await fetch(`${BACKEND_URL}/api/rooms/my-rooms`, { headers });
-                if (roomsRes.ok) setMyRooms(await roomsRes.json());
-
-                // Fetch Interviews
-                const interviewsRes = await fetch(`${BACKEND_URL}/api/dashboard/interviews`, { headers });
-                if (interviewsRes.ok) setPastInterviews(await interviewsRes.json());
-
-                // Fetch Leaderboard
-                const leaderboardRes = await fetch(`${BACKEND_URL}/api/leaderboard`);
-                if (leaderboardRes.ok) setLeaderboard(await leaderboardRes.json());
+                // 2. Fetch User Rooms
+                const rooms = await fetchUserRooms(user.uid || user.id);
+                setMyRooms(rooms);
 
             } catch (err) {
-                console.error("Dashboard fetch error", err);
+                console.error("Dashboard data load error", err);
             } finally {
                 setLoading(false);
             }
         };
 
-        if (user) fetchData();
-    }, [user, BACKEND_URL]);
+        loadDashboardData();
+    }, [user]);
+
+    // Subscribe to Leaderboard
+    useEffect(() => {
+        const unsub = subscribeToLeaderboard(setLeaderboard);
+        return () => unsub();
+    }, []);
 
     // Subscribe to online users
     useEffect(() => {
@@ -71,30 +82,28 @@ const Dashboard = () => {
 
 
     const handleCreateRoom = async (options = {}) => {
+        setIsCreating(true);
         try {
-            const token = localStorage.getItem('token');
-            const headers = { 'Content-Type': 'application/json' };
-            if (token) {
-                headers['Authorization'] = `Bearer ${token}`;
-            }
+            const roomData = {
+                ...options,
+                ownerId: user?.id,
+                ownerName: user?.username || "Anonymous"
+            };
 
-            const res = await fetch(`${BACKEND_URL}/api/create-room`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(options)
-            });
-            const data = await res.json();
-            if (data.roomId) {
+            const newRoom = await createRoom(roomData);
+
+            if (newRoom.id) {
                 // Increment Firestore stats
                 if (user?.id) {
                     incrementUserStats(user.id, 'room');
-                    logTransaction(user.id, 'ROOM_CREATED', { roomId: data.roomId });
+                    logTransaction(user.id, 'ROOM_CREATED', { roomId: newRoom.id });
                 }
-                navigate(`/room/${data.roomId}`);
+                navigate(`/room/${newRoom.id}`);
             }
         } catch (err) {
             console.error('Failed to create room:', err);
-            alert('Failed to create room. Please ensure the backend server is running.');
+            alert('Failed to create room: ' + err.message);
+            setIsCreating(false);
         }
     };
 
@@ -102,7 +111,8 @@ const Dashboard = () => {
         navigate(`/room/${roomId}`);
     };
 
-    if (loading) return <div style={{ color: 'white', textAlign: 'center', padding: '4rem' }}>Loading Dashboard...</div>;
+    if (loading) return <Loading message="Loading Dashboard..." size="fullscreen" />;
+    if (isCreating) return <Loading message="Initializing Secure Environment..." size="fullscreen" />;
 
     const getGreeting = () => {
         const hour = new Date().getHours();
@@ -161,150 +171,105 @@ const Dashboard = () => {
             </div>
 
             {/* Main Content Area */}
-            <div style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '2rem', alignItems: 'start' }}>
+            <div className="dashboard-grid">
 
                 {/* Left Column: Tools & History */}
                 <div>
                     {/* Quick Tools Section */}
                     <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#cbd5e1' }}>Quick Actions</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '3rem' }}>
-                        <Link to="/problems" className="glass-card" style={{ padding: '2rem', textDecoration: 'none', color: 'white', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s' }}>
+                    <div className="quick-actions-grid">
+                        <Link to="/problems" className="glass-card action-card">
                             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#f59e0b' }}></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                <div style={{ background: 'rgba(245, 158, 11, 0.2)', padding: '1rem', borderRadius: '16px', color: '#f59e0b' }}><FaCode size={24} /></div>
-                                <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.25rem' }}>Problems Library</div>
-                                    <div style={{ color: '#94a3b8' }}>Practice algorithms & data structures</div>
-                                </div>
+                            <div className="icon-box" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}><FaCode size={24} /></div>
+                            <div>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.25rem' }}>Problems Library</div>
+                                <div style={{ color: '#94a3b8' }}>Practice algorithms & data structures</div>
                             </div>
                         </Link>
-                        <button onClick={() => handleCreateRoom()} className="glass-card" style={{ padding: '2rem', textDecoration: 'none', color: 'white', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden', cursor: 'pointer', textAlign: 'left', background: 'none' }}>
+                        <button onClick={() => handleCreateRoom()} className="glass-card action-card" style={{ cursor: 'pointer', textAlign: 'left', background: 'none' }}>
                             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#8b5cf6' }}></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                <div style={{ background: 'rgba(139, 92, 246, 0.2)', padding: '1rem', borderRadius: '16px', color: '#8b5cf6' }}><FaLaptopCode size={24} /></div>
-                                <div>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.25rem' }}>Mock Interview</div>
-                                    <div style={{ color: '#94a3b8' }}>Start a collaborative interview session</div>
-                                </div>
+                            <div className="icon-box" style={{ background: 'rgba(139, 92, 246, 0.2)', color: '#8b5cf6' }}><FaLaptopCode size={24} /></div>
+                            <div>
+                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.25rem' }}>New Session</div>
+                                <div style={{ color: '#94a3b8' }}>Start a collaborative coding room</div>
                             </div>
                         </button>
-                        <Link to="/quizzes" className="glass-card" style={{ padding: '2rem', textDecoration: 'none', color: 'white', border: '1px solid rgba(255,255,255,0.05)', position: 'relative', overflow: 'hidden', transition: 'transform 0.2s', gridColumn: 'span 2' }}>
-                            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }}></div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                <div style={{ background: 'rgba(16, 185, 129, 0.2)', padding: '1rem', borderRadius: '16px', color: '#10b981' }}><FaBrain size={24} /></div>
-                                <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', marginBottom: '0.25rem' }}>Quiz Arena (Beta)</div>
-                                    <div style={{ color: '#94a3b8' }}>Test your knowledge in Python, React, and more.</div>
-                                </div>
-                                <FaArrowRight color="#64748b" />
+                    </div>
+
+                    {/* Advanced Tools Section */}
+                    <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#cbd5e1' }}>Advanced Tools</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+                        <Link to="/debugging" className="glass-card tool-card" style={{ background: 'rgba(239, 68, 68, 0.1)' }}>
+                            <div className="tool-icon" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}><FaBug size={20} /></div>
+                            <div>
+                                <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Debugging</div>
+                                <div style={{ fontSize: '0.85rem', color: '#fca5a5' }}>Analyze & Fix</div>
+                            </div>
+                        </Link>
+                        <Link to="/testing" className="glass-card tool-card" style={{ background: 'rgba(16, 185, 129, 0.1)' }}>
+                            <div className="tool-icon" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#10b981' }}><FaVial size={20} /></div>
+                            <div>
+                                <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Testing</div>
+                                <div style={{ fontSize: '0.85rem', color: '#6ee7b7' }}>Run Unit Tests</div>
+                            </div>
+                        </Link>
+                        <Link to="/codegen" className="glass-card tool-card" style={{ background: 'rgba(245, 158, 11, 0.1)' }}>
+                            <div className="tool-icon" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' }}><FaMagic size={20} /></div>
+                            <div>
+                                <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>Code Gen</div>
+                                <div style={{ fontSize: '0.85rem', color: '#fcd34d' }}>AI Assistant</div>
                             </div>
                         </Link>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                        <div style={{ display: 'flex', gap: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
-                            <h2
-                                onClick={() => setActiveTab('rooms')}
-                                style={{
-                                    fontSize: '1.2rem', cursor: 'pointer',
-                                    color: activeTab === 'rooms' ? '#3b82f6' : '#64748b',
-                                    borderBottom: activeTab === 'rooms' ? '2px solid #3b82f6' : 'none',
-                                    paddingBottom: '0.5rem', marginBottom: '-0.5rem'
-                                }}
-                            >
-                                Recent Rooms
-                            </h2>
-                            <h2
-                                onClick={() => setActiveTab('interviews')}
-                                style={{
-                                    fontSize: '1.2rem', cursor: 'pointer',
-                                    color: activeTab === 'interviews' ? '#10b981' : '#64748b',
-                                    borderBottom: activeTab === 'interviews' ? '2px solid #10b981' : 'none',
-                                    paddingBottom: '0.5rem', marginBottom: '-0.5rem'
-                                }}
-                            >
-                                Interview History
-                            </h2>
-                        </div>
+                    <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
+                        <h2 style={{ fontSize: '1.5rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <FaHistory color="#3b82f6" /> Recent Rooms
+                        </h2>
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {activeTab === 'rooms' ? (
-                            myRooms.length === 0 ? (
-                                <div className="glass-card" style={{ padding: '4rem', textAlign: 'center', color: '#64748b', borderStyle: 'dashed' }}>
-                                    <FaHistory size={40} style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                                    <p>No recent activity. Start your first session!</p>
-                                </div>
-                            ) : (
-                                myRooms.map(room => (
-                                    <motion.div
-                                        key={room.id}
-                                        className="glass-card"
-                                        whileHover={{ x: 5, borderColor: '#3b82f6' }}
-                                        style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                                    >
-                                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                                            <div style={{
-                                                width: '50px', height: '50px', borderRadius: '12px',
-                                                background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem'
-                                            }}>
-                                                {room.language === 'python' ? '🐍' : '📜'}
-                                            </div>
-                                            <div>
-                                                <h3 style={{ margin: 0, fontSize: '1.1rem', marginBottom: '0.25rem' }}>
-                                                    Room #{room.room_id}
-                                                    {!room.is_public && <span style={{ marginLeft: '10px', fontSize: '0.7rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>PRIVATE</span>}
-                                                </h3>
-                                                <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
-                                                    Created {new Date(room.created_at).toLocaleDateString()} • {room.language}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <Link to={`/room/${room.room_id}`} className="btn" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'white', padding: '0.6rem 1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                            Rejoin
-                                        </Link>
-                                    </motion.div>
-                                ))
-                            )
+                        {myRooms.length === 0 ? (
+                            <div className="glass-card" style={{ padding: '4rem', textAlign: 'center', color: '#64748b', borderStyle: 'dashed' }}>
+                                <FaHistory size={40} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                                <p>No recent activity. Start your first session!</p>
+                            </div>
                         ) : (
-                            pastInterviews.length === 0 ? (
-                                <div className="glass-card" style={{ padding: '4rem', textAlign: 'center', color: '#64748b' }}>
-                                    <p>No interviews recorded.</p>
-                                </div>
-                            ) : (
-                                pastInterviews.map(session => (
-                                    <motion.div
-                                        key={session.id}
-                                        className="glass-card"
-                                        whileHover={{ x: 5, borderColor: '#10b981' }}
-                                        style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid #10b981' }}
-                                    >
+                            myRooms.map(room => (
+                                <motion.div
+                                    key={room.id}
+                                    className="glass-card room-card"
+                                    whileHover={{ x: 5, borderColor: '#3b82f6' }}
+                                >
+                                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <div style={{
+                                            width: '50px', height: '50px', borderRadius: '12px',
+                                            background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem'
+                                        }}>
+                                            {room.language === 'python' ? '🐍' : '📜'}
+                                        </div>
                                         <div>
-                                            <h3 style={{ margin: 0, fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                                                Candidate: {session.candidate_name}
+                                            <h3 style={{ margin: 0, fontSize: '1.1rem', marginBottom: '0.25rem' }}>
+                                                Room #{room.room_id}
+                                                {!room.is_public && <span style={{ marginLeft: '10px', fontSize: '0.7rem', background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>PRIVATE</span>}
                                             </h3>
-                                            <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-                                                {new Date(session.created_at).toLocaleDateString()} • Room #{session.room_id}
-                                            </div>
-                                            <div style={{ marginTop: '8px' }}>
-                                                <span style={{ fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', padding: '4px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
-                                                    Score: {session.score}/100
-                                                </span>
+                                            <div style={{ fontSize: '0.85rem', color: '#94a3b8' }}>
+                                                Created {new Date(room.created_at).toLocaleDateString()} • {room.language}
                                             </div>
                                         </div>
-                                        <Link to={`/room/${session.room_id}`} className="btn" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '0.5rem 1.2rem' }}>
-                                            View Report
-                                        </Link>
-                                    </motion.div>
-                                ))
-                            )
+                                    </div>
+                                    <Link to={`/room/${room.room_id}`} className="btn rejoin-btn">
+                                        Rejoin
+                                    </Link>
+                                </motion.div>
+                            ))
                         )}
                     </div>
                 </div>
 
                 {/* Right Column: Leaderboard */}
-                <div>
+                <div className="leaderboard-column">
                     <div className="glass-card" style={{ padding: '1.5rem', position: 'sticky', top: '100px' }}>
                         <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
                             <FaTrophy color="#fbbf24" /> Leaderboard
@@ -335,6 +300,92 @@ const Dashboard = () => {
                     </div>
                 </div>
             </div>
+
+            <style>{`
+                .dashboard-grid {
+                    display: grid;
+                    grid-template-columns: 3fr 1fr;
+                    gap: 2rem;
+                    align-items: start;
+                }
+                .quick-actions-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 1.5rem;
+                    margin-bottom: 3rem;
+                }
+                .action-card {
+                    padding: 2rem;
+                    text-decoration: none;
+                    color: white;
+                    border: 1px solid rgba(255,255,255,0.05);
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.2s;
+                    display: flex;
+                    align-items: center;
+                }
+                .icon-box {
+                    padding: 1rem;
+                    border-radius: 16px;
+                    margin-right: 1.5rem;
+                }
+                .tool-card {
+                    padding: 1.5rem;
+                    text-decoration: none;
+                    color: white;
+                    border: 1px solid rgba(255,255,255,0.05);
+                    display: flex;
+                    flex-direction: column;
+                    gap: 1rem;
+                    transition: transform 0.2s;
+                }
+                .tool-icon {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .room-card {
+                    padding: 1.5rem;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .rejoin-btn {
+                    background: rgba(255, 255, 255, 0.05);
+                    color: white;
+                    padding: 0.6rem 1.5rem;
+                    border-radius: 8px;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    text-decoration: none;
+                }
+
+                @media (max-width: 1024px) {
+                    .dashboard-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .leaderboard-column {
+                        display: none; /* Optional: hide sticky leaderboard on tablet/mobile or move it */
+                    }
+                }
+                @media (max-width: 768px) {
+                    .quick-actions-grid {
+                        grid-template-columns: 1fr;
+                    }
+                    .room-card {
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 1rem;
+                    }
+                    .rejoin-btn {
+                        width: 100%;
+                        text-align: center;
+                    }
+                }
+            `}</style>
 
             <RoomChoiceModal
                 isOpen={isModalOpen}

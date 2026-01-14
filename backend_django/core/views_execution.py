@@ -153,6 +153,8 @@ class ExecuteCodeView(APIView):
         pass
 
 
+from .utils.firebase_client import get_firestore_client
+
 class SubmitSolutionView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -162,6 +164,15 @@ class SubmitSolutionView(APIView):
         language = request.data.get('language', 'javascript')
         room_id = request.data.get('roomId')
         
+        # Validate room details via Firestore
+        db = get_firestore_client()
+        if not db:
+            return Response({'error': 'Database unavailable'}, status=503)
+            
+        doc = db.collection('rooms').document(room_id).get()
+        if not doc.exists:
+             return Response({'error': 'Room not found'}, status=404)
+
         # Get all test cases (including hidden)
         test_cases = TestCase.objects.filter(question=question)
         
@@ -185,11 +196,11 @@ class SubmitSolutionView(APIView):
         else:
             submission_status = 'Wrong Answer'
         
-        # Create submission record
+        # Create submission record (room is optional/None now)
         submission = Submission.objects.create(
             user=request.user if request.user.is_authenticated else None,
             question=question,
-            room=Room.objects.get(room_id=room_id) if room_id else None,
+            room=None, # Bypass SQL Room relation
             code=code,
             language=language,
             status=submission_status,

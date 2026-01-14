@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import { FaPaperPlane, FaMicrophone, FaPaperclip, FaStop, FaReply, FaTimes, FaCommentDots } from 'react-icons/fa';
+import { FaPaperPlane, FaMicrophone, FaPaperclip, FaStop, FaReply, FaTimes, FaCommentDots, FaRobot } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import config from '../config';
 
@@ -142,108 +142,147 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
     };
 
     const formatMessage = (msg) => {
-        if (!msg) return null;
-        const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        let content;
+        try {
+            if (!msg) return null;
+            const timestamp = msg.createdAt || msg.timestamp || new Date();
+            const time = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            let content;
 
-        if (msg.type === 'AUDIO' || msg.isVoice) {
-            const url = msg.attachmentUrl || msg.fileUrl;
-            content = <audio controls src={url} style={{ width: '100%', marginTop: '5px' }} />;
-        } else if (msg.type === 'IMAGE') {
-            const url = msg.attachmentUrl || msg.fileUrl;
-            content = <img src={url} alt="Shared" style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '5px' }} />;
-        } else if (msg.type === 'FILE') {
-            const url = msg.attachmentUrl || msg.fileUrl;
-            let fileContentDisplay = 'File';
-            try {
-                if (typeof msg.content === 'object') {
-                    fileContentDisplay = JSON.stringify(msg.content);
-                } else {
-                    fileContentDisplay = String(msg.content || 'File');
-                }
-            } catch (e) { fileContentDisplay = 'File'; }
-
-            content = (
-                <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--accent-primary)', marginTop: '5px' }}>
-                    <FaPaperclip /> {fileContentDisplay}
-                </a>
-            );
-        } else {
-            let textContent = '';
-            try {
-                if (typeof msg.content === 'object') {
-                    textContent = JSON.stringify(msg.content);
-                } else {
-                    textContent = String(msg.content || '');
-                }
-            } catch (e) { textContent = '[Invalid Content]'; }
-
-            content = <div className="message-text">{textContent}</div>;
-        }
-
-        // Parent Message Display
-        let parentDisplay = null;
-        if (msg.parentId) {
-            const parent = messages.find(m => m.id === msg.parentId || m.id === parseInt(msg.parentId));
-            if (parent) {
-                let parentContent = '';
+            if (msg.type === 'AUDIO' || msg.isVoice) {
+                const url = msg.attachmentUrl || msg.fileUrl;
+                content = <audio controls src={url} style={{ width: '100%', marginTop: '5px' }} />;
+            } else if (msg.type === 'IMAGE') {
+                const url = msg.attachmentUrl || msg.fileUrl;
+                content = <img src={url} alt="Shared" style={{ maxWidth: '100%', borderRadius: '8px', marginTop: '5px' }} />;
+            } else if (msg.type === 'FILE') {
+                const url = msg.attachmentUrl || msg.fileUrl;
+                let fileContentDisplay = 'File';
                 try {
-                    if (typeof parent.content === 'object') {
-                        parentContent = JSON.stringify(parent.content).substring(0, 30) + '...';
+                    if (typeof msg.content === 'object') {
+                        fileContentDisplay = JSON.stringify(msg.content);
                     } else {
-                        parentContent = String(parent.content || '').substring(0, 30) + '...';
+                        fileContentDisplay = String(msg.content || 'File');
                     }
-                } catch (e) { parentContent = '...'; }
+                } catch (e) { fileContentDisplay = 'File'; }
 
-                parentDisplay = (
-                    <div style={{
-                        borderLeft: '2px solid var(--accent-secondary)',
-                        paddingLeft: '8px',
-                        marginBottom: '6px',
-                        fontSize: '0.8rem',
-                        color: 'var(--text-secondary)',
-                        background: 'rgba(255,255,255,0.05)',
-                        padding: '4px',
-                        borderRadius: '0 4px 4px 0'
-                    }}>
-                        <strong>{String(parent.userId || 'User').substring(0, 10)}:</strong> {parentContent}
-                    </div>
+                content = (
+                    <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--accent-primary)', marginTop: '5px' }}>
+                        <FaPaperclip /> {fileContentDisplay}
+                    </a>
                 );
-            }
-        }
+            } else {
+                let textContent = '';
+                try {
+                    if (typeof msg.content === 'object') {
+                        textContent = JSON.stringify(msg.content);
+                    } else {
+                        textContent = String(msg.content || '');
+                    }
+                } catch (e) { textContent = '[Invalid Content]'; }
 
-        return (
-            <motion.div
-                key={msg.id || msg.timestamp}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '8px', position: 'relative' }}
-            >
-                {parentDisplay}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: 'bold', color: msg.userId === 'Gemini AI' ? '#ec4899' : '#f8fafc' }}>
-                        {msg.userId === 'Gemini AI' ? '✨ Gemini AI' : String(msg.userId || 'User').substring(0, 10)}
-                    </span>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <span>{time}</span>
-                        {/* Reply Button */}
-                        <button
-                            onClick={() => setReplyingTo(msg)}
-                            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}
-                            title="Reply"
-                        >
-                            <FaReply />
-                        </button>
+                content = <div className="message-text">{textContent}</div>;
+            }
+
+            // Parent Message Display
+            let parentDisplay = null;
+            if (msg.parentId) {
+                const parent = messages.find(m => m.id === msg.parentId || m.id === parseInt(msg.parentId));
+                if (parent) {
+                    let parentContent = '';
+                    try {
+                        if (typeof parent.content === 'object') {
+                            parentContent = JSON.stringify(parent.content).substring(0, 30) + '...';
+                        } else {
+                            parentContent = String(parent.content || '').substring(0, 30) + '...';
+                        }
+                    } catch (e) { parentContent = '...'; }
+
+                    parentDisplay = (
+                        <div style={{
+                            borderLeft: '2px solid var(--accent-secondary)',
+                            paddingLeft: '8px',
+                            marginBottom: '6px',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-secondary)',
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '4px',
+                            borderRadius: '0 4px 4px 0'
+                        }}>
+                            <strong>{String(parent.senderName || parent.userId || 'User').substring(0, 10)}:</strong> {parentContent}
+                        </div>
+                    );
+                }
+            }
+
+            const senderName = String(msg.senderName || msg.userId || 'User');
+            const senderInitial = senderName.charAt(0).toUpperCase() || '?';
+
+            return (
+                <motion.div
+                    key={msg.id || msg.timestamp || Math.random()}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{ marginBottom: '1rem', background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '8px', position: 'relative' }}
+                >
+                    {parentDisplay}
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        {/* Avatar */}
+                        {msg.userId === 'Gemini AI' ? (
+                            <div style={{
+                                width: '32px', height: '32px', borderRadius: '50%',
+                                background: 'linear-gradient(45deg, #8b5cf6, #ec4899)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '0.9rem', color: 'white', flexShrink: 0
+                            }}>
+                                <FaRobot />
+                            </div>
+                        ) : (
+                            <div style={{
+                                width: '32px', height: '32px', borderRadius: '50%',
+                                background: `hsl(${Math.abs((String(senderName).charCodeAt(0) * 5) % 360)}, 70%, 50%)`,
+                                color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontSize: '0.9rem', fontWeight: 'bold', flexShrink: 0
+                            }}>
+                                {senderInitial}
+                            </div>
+                        )}
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#94a3b8', marginBottom: '2px', alignItems: 'center' }}>
+                                <span style={{ fontWeight: 'bold', color: msg.userId === 'Gemini AI' ? '#f472b6' : '#f8fafc' }}>
+                                    {msg.userId === 'Gemini AI' ? 'Gemini AI' : senderName.substring(0, 15)}
+                                </span>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <span>{time}</span>
+                                    <button
+                                        onClick={() => setReplyingTo(msg)}
+                                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 0 }}
+                                        title="Reply"
+                                    >
+                                        <FaReply />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {content}
+
+                            <div className="message-reactions" style={{ marginTop: '5px', display: 'flex', gap: '5px' }}>
+                                <button onClick={() => onReaction && onReaction(msg.timestamp, '👍')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>👍</button>
+                                <button onClick={() => onReaction && onReaction(msg.timestamp, '❤️')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>❤️</button>
+                                <button onClick={() => onReaction && onReaction(msg.timestamp, '😂')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.85rem' }}>😂</button>
+                            </div>
+                        </div>
                     </div>
+                </motion.div>
+            );
+        } catch (err) {
+            console.error("Message rendering error", err, msg);
+            return (
+                <div key={msg?.id || Math.random()} style={{ color: 'red', fontSize: '0.8rem', padding: '0.5rem' }}>
+                    Error rendering message
                 </div>
-                {content}
-                <div className="message-reactions" style={{ marginTop: '5px', display: 'flex', gap: '5px' }}>
-                    <button onClick={() => onReaction && onReaction(msg.timestamp, '👍')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.9rem' }}>👍</button>
-                    <button onClick={() => onReaction && onReaction(msg.timestamp, '❤️')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.9rem' }}>❤️</button>
-                    <button onClick={() => onReaction && onReaction(msg.timestamp, '😂')} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, fontSize: '0.9rem' }}>😂</button>
-                </div>
-            </motion.div>
-        );
+            );
+        }
     };
 
     if (!isOpen) return null;
@@ -342,7 +381,7 @@ const ChatPanel = ({ socket, roomId, messages, onSendMessage, onReaction, isOpen
                         color: '#94a3b8',
                         fontSize: '0.85rem'
                     }}>
-                        <span>Replying to <strong>{String(replyingTo.userId || 'User').substring(0, 10)}</strong>: {String(replyingTo.content || '').substring(0, 30)}...</span>
+                        <span>Replying to <strong>{(replyingTo.senderName || String(replyingTo.userId || 'User').substring(0, 10))}</strong>: {String(replyingTo.content || '').substring(0, 30)}...</span>
                         <button onClick={() => setReplyingTo(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
                             <FaTimes />
                         </button>

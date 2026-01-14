@@ -12,14 +12,16 @@ import './App.css';
 // Lazy loading components for performance optimization
 const Landing = lazy(() => import('./components/Landing'));
 const Editor = lazy(() => import('./components/Editor'));
+const ProblemSolver = lazy(() => import('./components/ProblemSolver'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const Leaderboard = lazy(() => import('./components/Leaderboard'));
 const Problems = lazy(() => import('./pages/Problems'));
 const Profile = lazy(() => import('./pages/Profile'));
-const Quizzes = lazy(() => import('./pages/Quizzes'));
-const QuizPlayer = lazy(() => import('./pages/QuizPlayer'));
+const Debugging = lazy(() => import('./pages/Debugging'));
+const Testing = lazy(() => import('./pages/Testing'));
+const CodeGen = lazy(() => import('./pages/CodeGen'));
 
 function App() {
 
@@ -31,7 +33,7 @@ function App() {
           <ToastProvider>
             <Router>
               <Navbar />
-              <AIAssistant />
+              {/* <AIAssistant /> */}
               <Suspense fallback={<Loading />}>
                 <Routes>
                   <Route path="/" element={<Landing />} />
@@ -48,22 +50,33 @@ function App() {
                       <Problems />
                     </ProtectedRoute>
                   } />
+                  <Route path="/debugging" element={
+                    <ProtectedRoute>
+                      <Debugging />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/testing" element={
+                    <ProtectedRoute>
+                      <Testing />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/codegen" element={
+                    <ProtectedRoute>
+                      <CodeGen />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/profile" element={
                     <ProtectedRoute>
                       <Profile />
                     </ProtectedRoute>
                   } />
-                  <Route path="/quizzes" element={
+                  <Route path="/profile" element={
                     <ProtectedRoute>
-                      <Quizzes />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/quizzes/:id" element={
-                    <ProtectedRoute>
-                      <QuizPlayer />
+                      <Profile />
                     </ProtectedRoute>
                   } />
                   <Route path="/room/:roomId" element={<Editor />} />
+                  <Route path="/solve/:roomId" element={<ProblemSolver />} />
                 </Routes>
               </Suspense>
             </Router>
